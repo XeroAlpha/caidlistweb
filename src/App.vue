@@ -48,7 +48,7 @@
           </v-list-item-group>
           <v-divider></v-divider>
           <v-list-item disabled>
-            <v-list-item-title> 版本：{{ version }} </v-list-item-title>
+            <v-list-item-title>版本：{{ version }}</v-list-item-title>
           </v-list-item>
           <v-list-item href="./latest.zip">
             <v-list-item-title>离线版</v-list-item-title>
@@ -56,8 +56,8 @@
           <v-list-item href="https://jq.qq.com/?_wv=1027&k=RcLgagPy">
             <v-list-item-title>问题反馈</v-list-item-title>
           </v-list-item>
-          <v-list-item href="https://gitee.com/projectxero/caidlist">
-            <v-list-item-title>关于</v-list-item-title>
+          <v-list-item href="https://gitee.com/projectxero/idlistweb">
+            <v-list-item-title>关于 MCBEID表</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
