@@ -41,16 +41,24 @@
             <v-list-item
               v-for="(enumName, i) in enumNamesForList"
               :key="i"
-              @click="focusSearchBox(), (selectingEnum = false)"
+              @click="focusSearchBox()"
             >
               <v-list-item-title>{{ enumName }}</v-list-item-title>
             </v-list-item>
           </v-list-item-group>
           <v-divider></v-divider>
+          <v-list-item link @click="branchMenu.visible = true">
+            <v-list-item-title>分支：{{ branchName }}</v-list-item-title>
+          </v-list-item>
           <v-list-item disabled>
             <v-list-item-title>版本：{{ version }}</v-list-item-title>
           </v-list-item>
-          <v-list-item href="./latest.zip">
+          <v-list-item link @click="fullLoadMode = !fullLoadMode">
+            <v-list-item-title>
+              性能优化：{{ fullLoadMode ? "关闭" : "开启" }}
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item :href="offlineUrl">
             <v-list-item-title>离线版</v-list-item-title>
           </v-list-item>
           <v-list-item href="https://jq.qq.com/?_wv=1027&k=RcLgagPy">
@@ -61,6 +69,18 @@
           </v-list-item>
         </v-list>
       </v-menu>
+      <v-dialog v-model="branchMenu.visible" max-width="300px">
+        <v-list class="overflow-y-auto" max-height="90vh">
+          <v-list-item
+            v-for="(branchMeta, i) in branchMenu.list"
+            :key="i"
+            @click="closeBranchMenuAndLoadBranch(branchMeta)"
+          >
+            <v-list-item-title>{{ branchMeta.name }}</v-list-item-title>
+            <v-icon v-if="branchMeta.name == branchName">mdi-check</v-icon>
+          </v-list-item>
+        </v-list>
+      </v-dialog>
       <v-progress-linear
         :active="!computingState.finished"
         :value="computingState.progress"
@@ -69,23 +89,43 @@
       ></v-progress-linear>
     </v-app-bar>
     <v-main>
-      <v-list>
+      <v-list v-if="fullLoadMode">
         <v-list-item
           ripple
-          v-for="(e, i) in searchResult"
-          :key="i"
-          @click="showIDDetail(e)"
+          v-for="(item, index) in searchResult"
+          :key="index"
+          @click="showIDDetail(item)"
         >
           <v-list-item-content>
             <v-list-item-title>
-              {{ e.key }}
+              {{ item.key }}
             </v-list-item-title>
-            <v-list-item-subtitle v-if="e.value">
-              {{ e.value }}
+            <v-list-item-subtitle v-if="item.value">
+              {{ item.value }}
             </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
       </v-list>
+      <v-virtual-scroll
+        :items="searchResult"
+        :height="windowHeight - 65"
+        item-height="62px"
+        v-resize="onWindowSizeChanged"
+        v-else
+      >
+        <template v-slot:default="{ item }">
+          <v-list-item ripple :key="item" @click="showIDDetail(item)">
+            <v-list-item-content>
+              <v-list-item-title>
+                {{ item.key }}
+              </v-list-item-title>
+              <v-list-item-subtitle v-if="item.value">
+                {{ item.value }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </template>
+      </v-virtual-scroll>
     </v-main>
     <v-snackbar v-model="snackbar.visible">
       {{ snackbar.text }}
@@ -141,7 +181,32 @@ function delayedValue(ms, value) {
 function nextAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
-
+const branchList = [
+  {
+    id: "vanilla",
+    name: "原版",
+    dataUrl: "./data.json",
+    offlineUrl: "./latest.zip",
+  },
+  {
+    id: "education",
+    name: "教育版",
+    dataUrl: "./data.education.json",
+    offlineUrl: "./latest.education.zip",
+  },
+  {
+    id: "experiment",
+    name: "实验性玩法",
+    dataUrl: "./data.experiment.json",
+    offlineUrl: "./latest.experiment.zip",
+  },
+  {
+    id: "translator",
+    name: "翻译专用",
+    dataUrl: "./data.translator.json",
+    offlineUrl: "./latest.translator.zip",
+  },
+];
 export default {
   name: "App",
 
@@ -151,17 +216,24 @@ export default {
       visible: false,
       text: "",
     },
+    branchMenu: {
+      visible: false,
+      list: branchList,
+    },
     idDetailDialog: {
       visible: false,
       key: "",
       value: "",
     },
+    windowHeight: 0,
     enumNames: [["loading", "正在加载"]],
     enums: {},
+    branchName: "",
     version: "",
     publishTime: "",
+    offlineUrl: "",
     selectedEnumIndex: 0,
-    selectingEnum: false,
+    fullLoadMode: false,
     searchBoxFocus: false,
     searchText: null,
     computingState: {
@@ -193,6 +265,34 @@ export default {
       this.snackbar.visible = true;
       this.snackbar.text = text;
     },
+    onWindowSizeChanged() {
+      this.windowHeight = window.innerHeight;
+    },
+    async loadBranch(branchMeta) {
+      this.offlineUrl = branchMeta.offlineUrl;
+      try {
+        const json = await (await fetch(branchMeta.dataUrl)).json();
+        this.loading = false;
+        this.version = json.version;
+        this.branchName = json.branchName;
+        this.enums = json.enums;
+        this.enumNames = json.names;
+        this.publishTime = new Date(json.publishTime).toLocaleDateString();
+        this.computeSearchResult();
+        return true;
+      } catch (err) {
+        this.showSnackBar("获取数据失败：" + err);
+      }
+      return false;
+    },
+    closeBranchMenuAndLoadBranch(branchMeta) {
+      this.branchMenu.visible = false;
+      this.loadBranch(branchMeta).then((success) => {
+        if (success) {
+          this.showSnackBar("切换至分支：" + this.branchName);
+        }
+      });
+    },
     showIDDetail(kv) {
       this.idDetailDialog.visible = true;
       this.idDetailDialog.key = kv.key;
@@ -204,13 +304,13 @@ export default {
         this.copyText(text);
       }
     },
-    copyText(text) {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => this.showSnackBar(`复制”${text}“成功`))
-        .catch(() =>
-          this.showSnackBar(`复制失败，请尝试在其他浏览器打开并复制`)
-        );
+    async copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        this.showSnackBar(`复制”${text}“成功`);
+      } catch (err) {
+        this.showSnackBar(`复制失败，请尝试在其他浏览器打开并复制`);
+      }
     },
     focusSearchBox() {
       document.querySelector("#search_box").focus();
@@ -231,9 +331,13 @@ export default {
     },
     async computeSearchResultAsync() {
       const itemPerFrame = 1,
-        elementPerFrame = 50;
+        elementPerFrame = 50,
+        updateCountPerFrame = 100;
       let { selectedEnum, searchText } = this;
-      let i, chunk, keys;
+      let i,
+        chunk,
+        keys,
+        updateCounts = 0;
       if (!selectedEnum) return;
       if (!searchText) searchText = "";
       this.computingState.finished = false;
@@ -255,7 +359,12 @@ export default {
         this.computingState.progress = (i / keys.length) * 100;
         while (chunk.length > 0) {
           this.searchResult.push(...chunk.splice(0, elementPerFrame));
-          if (this.searchBoxFocus) {
+          updateCounts++;
+          if (
+            (this.searchBoxFocus && this.fullLoadMode) ||
+            updateCounts > updateCountPerFrame
+          ) {
+            updateCounts = 0;
             await nextAnimationFrame();
           }
         }
@@ -270,22 +379,13 @@ export default {
 
   created: function () {
     document.title = "MCBEID表";
-    fetch("./data.json")
-      .then((res) => res.json())
-      .then((json) => {
-        this.loading = false;
-        this.version = json.version;
-        this.enums = json.enums;
-        this.enumNames = json.names;
-        this.publishTime = new Date(json.publishTime).toLocaleDateString();
-        this.computeSearchResult();
-      })
-      .catch((err) => {
-        this.showSnackBar(String(err));
-      });
+    this.loadBranch(branchList[0]);
   },
 };
 </script>
 
 <style>
+html {
+  overflow-y: auto;
+}
 </style>
