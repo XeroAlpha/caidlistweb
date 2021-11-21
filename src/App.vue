@@ -11,6 +11,7 @@
         hide-details="auto"
         prepend-icon="mdi-magnify"
         v-model="searchText"
+        label="搜索"
         @input="computeSearchResult"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
@@ -58,9 +59,24 @@
               性能优化：{{ fullLoadMode ? "关闭" : "开启" }}
             </v-list-item-title>
           </v-list-item>
-          <v-list-item :href="offlineUrl">
-            <v-list-item-title>离线版</v-list-item-title>
+          <v-list-item
+            link
+            v-if="pwa.installPrompt != null"
+            @click="pwaPromptInstall()"
+          >
+            <v-list-item-title>安装离线版</v-list-item-title>
           </v-list-item>
+          <v-list-item
+            link
+            v-if="pwa.updatedWorker != null"
+            @click="pwaForceUpdate()"
+          >
+            <v-list-item-title>应用更新</v-list-item-title>
+          </v-list-item>
+          <v-list-item :href="offlineUrl">
+            <v-list-item-title>下载压缩包</v-list-item-title>
+          </v-list-item>
+          <v-divider></v-divider>
           <v-list-item href="https://jq.qq.com/?_wv=1027&k=RcLgagPy">
             <v-list-item-title>问题反馈</v-list-item-title>
           </v-list-item>
@@ -84,6 +100,7 @@
       <v-progress-linear
         :active="!computingState.finished"
         :value="computingState.progress"
+        aria-label="加载进度"
         absolute
         bottom
       ></v-progress-linear>
@@ -110,11 +127,12 @@
         :items="searchResult"
         :height="windowHeight - 65"
         item-height="62px"
+        bench="1"
         v-resize="onWindowSizeChanged"
         v-else
       >
         <template v-slot:default="{ item }">
-          <v-list-item ripple :key="item" @click="showIDDetail(item)">
+          <v-list-item ripple :key="item.key" @click="showIDDetail(item)">
             <v-list-item-content>
               <v-list-item-title>
                 {{ item.key }}
@@ -174,6 +192,8 @@
 </template>
 
 <script>
+import { register } from "register-service-worker";
+
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
 }
@@ -212,6 +232,10 @@ export default {
 
   data: () => ({
     loading: true,
+    pwa: {
+      updatedWorker: null,
+      installPrompt: null,
+    },
     snackbar: {
       visible: false,
       text: "",
@@ -261,6 +285,14 @@ export default {
   },
 
   methods: {
+    pwaPromptInstall() {
+      let ev = this.pwa.installPrompt;
+      this.pwa.installPrompt = null;
+      ev.prompt();
+    },
+    pwaForceUpdate() {
+      this.pwa.updatedWorker.postMessage({ type: "SKIP_WAITING" });
+    },
     showSnackBar(text) {
       this.snackbar.visible = true;
       this.snackbar.text = text;
@@ -379,6 +411,21 @@ export default {
 
   created: function () {
     document.title = "MCBEID表";
+    if (process.env.NODE_ENV === "production") {
+      register(`./service-worker.js`, {
+        updated: (reg) => {
+          this.pwa.updatedWorker = reg.waiting;
+        },
+        error: (err) => console.error(err),
+      });
+      window.addEventListener("beforeinstallprompt", (ev) => {
+        ev.preventDefault();
+        this.pwa.installPrompt = ev;
+      });
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        window.location.reload();
+      });
+    }
     this.loadBranch(branchList[0]);
   },
 };
@@ -386,6 +433,6 @@ export default {
 
 <style>
 html {
-  overflow-y: auto;
+  overflow-y: auto !important;
 }
 </style>

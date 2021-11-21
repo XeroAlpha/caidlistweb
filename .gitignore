@@ -23,5 +23,8 @@ pnpm-debug.log*
 *.sw?
 
 # data files
-public/data.json
-public/latest.zip
+/public/data.json
+/public/data.*.json
+/public/latest.zip
+/public/latest.*.zip
+
