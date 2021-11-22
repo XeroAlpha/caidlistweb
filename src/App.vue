@@ -59,19 +59,14 @@
               性能优化：{{ fullLoadMode ? "关闭" : "开启" }}
             </v-list-item-title>
           </v-list-item>
-          <v-list-item
-            link
-            v-if="pwa.installPrompt != null"
-            @click="pwaPromptInstall()"
-          >
+          <v-list-item link v-if="pwa.installReady" @click="pwaPromptInstall()">
             <v-list-item-title>安装离线版</v-list-item-title>
           </v-list-item>
-          <v-list-item
-            link
-            v-if="pwa.updatedWorker != null"
-            @click="pwaForceUpdate()"
-          >
+          <v-list-item link v-if="pwa.updateReady" @click="pwaForceUpdate()">
             <v-list-item-title>应用更新</v-list-item-title>
+          </v-list-item>
+          <v-list-item link v-else-if="pwa.ready" @click="pwaCheckUpdate()">
+            <v-list-item-title>检测更新</v-list-item-title>
           </v-list-item>
           <v-list-item :href="offlineUrl">
             <v-list-item-title>下载压缩包</v-list-item-title>
@@ -106,7 +101,15 @@
       ></v-progress-linear>
     </v-app-bar>
     <v-main>
-      <v-list v-if="fullLoadMode">
+      <v-alert
+        text
+        type="info"
+        class="ma-3"
+        v-show="!searchResult.length && searchText.length"
+      >
+        未找到与“{{searchText}}”相关的 ID
+      </v-alert>
+      <v-list v-show="searchResult.length" v-if="fullLoadMode">
         <v-list-item
           ripple
           v-for="(item, index) in searchResult"
@@ -128,6 +131,7 @@
         :height="windowHeight - 65"
         item-height="62px"
         bench="1"
+        v-show="searchResult.length"
         v-resize="onWindowSizeChanged"
         v-else
       >
@@ -145,7 +149,7 @@
         </template>
       </v-virtual-scroll>
     </v-main>
-    <v-snackbar v-model="snackbar.visible">
+    <v-snackbar v-model="snackbar.visible" :timeout="snackbar.timeout">
       {{ snackbar.text }}
       <template v-slot:action="{ attrs }">
         <v-btn
@@ -192,7 +196,7 @@
 </template>
 
 <script>
-import { register } from "register-service-worker";
+import PWA from "./pwa";
 
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -201,6 +205,7 @@ function delayedValue(ms, value) {
 function nextAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
+
 const branchList = [
   {
     id: "vanilla",
@@ -233,12 +238,14 @@ export default {
   data: () => ({
     loading: true,
     pwa: {
-      updatedWorker: null,
-      installPrompt: null,
+      ready: false,
+      installReady: false,
+      updateReady: false,
     },
     snackbar: {
       visible: false,
       text: "",
+      timeout: -1,
     },
     branchMenu: {
       visible: false,
@@ -286,16 +293,29 @@ export default {
 
   methods: {
     pwaPromptInstall() {
-      let ev = this.pwa.installPrompt;
-      this.pwa.installPrompt = null;
-      ev.prompt();
+      this.pwa.installReady = false;
+      PWA.promptInstall();
     },
     pwaForceUpdate() {
-      this.pwa.updatedWorker.postMessage({ type: "SKIP_WAITING" });
+      this.pwa.updateReady = false;
+      PWA.forceUpdate();
+    },
+    async pwaCheckUpdate() {
+      try {
+        this.showSnackBar("正在检测更新");
+        if (await PWA.checkUpdate()) {
+          this.showSnackBar("更新正在安装，稍后将自动应用");
+        } else {
+          this.showSnackBar("已是最新版本");
+        }
+      } catch (err) {
+        this.showSnackBar("获取更新失败：" + err);
+      }
     },
     showSnackBar(text) {
       this.snackbar.visible = true;
       this.snackbar.text = text;
+      this.snackbar.timeout = 5000;
     },
     onWindowSizeChanged() {
       this.windowHeight = window.innerHeight;
@@ -411,21 +431,12 @@ export default {
 
   created: function () {
     document.title = "MCBEID表";
-    if (process.env.NODE_ENV === "production") {
-      register(`./service-worker.js`, {
-        updated: (reg) => {
-          this.pwa.updatedWorker = reg.waiting;
-        },
-        error: (err) => console.error(err),
-      });
-      window.addEventListener("beforeinstallprompt", (ev) => {
-        ev.preventDefault();
-        this.pwa.installPrompt = ev;
-      });
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        window.location.reload();
-      });
-    }
+    PWA.on("ready", () => (this.pwa.ready = true))
+      .on("updateReady", () => (this.pwa.updateReady = true))
+      .on("installReady", () => (this.pwa.installReady = true));
+    this.pwa.ready = PWA.workerState == "ready";
+    this.pwa.installReady = PWA.installPrompt != null;
+    this.pwa.updateReady = PWA.updatedWorker != null;
     this.loadBranch(branchList[0]);
   },
 };
