@@ -328,6 +328,9 @@ export default {
         this.version = json.version;
         this.branchName = json.branchName;
         this.enums = json.enums;
+        if (this.enumNames.length != json.names.length) {
+          this.selectedEnumIndex = 0;
+        }
         this.enumNames = json.names;
         this.publishTime = new Date(json.publishTime).toLocaleDateString();
         this.computeSearchResult();
