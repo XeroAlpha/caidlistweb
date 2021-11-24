@@ -12,7 +12,6 @@
         prepend-icon="mdi-magnify"
         v-model="searchText"
         label="搜索"
-        @input="computeSearchResult"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
       ></v-text-field>
@@ -101,14 +100,23 @@
       ></v-progress-linear>
     </v-app-bar>
     <v-main>
-      <v-alert
-        text
-        type="info"
-        class="ma-3"
-        v-show="!searchResult.length && searchText.length"
-      >
-        未找到与“{{searchText}}”相关的 ID
-      </v-alert>
+      <div class="ma-3" v-show="!searchResult.length && searchText">
+        <v-alert outlined text type="info" v-if="searchCorrection">
+          <v-row align="center">
+            <v-col class="grow">
+              未找到与“{{ searchText }}”相关的 ID，您要找的是不是“{{ searchCorrection }}”？
+            </v-col>
+            <v-col class="shrink pa-0 pr-3">
+              <v-btn text color="info" @click="searchText = searchCorrection">
+                更正
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-alert>
+        <v-alert outlined text type="info" v-else>
+          未找到与“{{ searchText }}”相关的 ID
+        </v-alert>
+      </div>
       <v-list v-show="searchResult.length" v-if="fullLoadMode">
         <v-list-item
           ripple
@@ -197,6 +205,7 @@
 
 <script>
 import PWA from "./pwa";
+import Corrections from "./corrections";
 
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -273,6 +282,7 @@ export default {
       restartCompute: false,
     },
     searchResult: [],
+    searchCorrection: null,
   }),
 
   computed: {
@@ -289,6 +299,10 @@ export default {
     selectedEnum() {
       return this.enums[this.selectedEnumMeta.id];
     },
+  },
+
+  watch: {
+    searchText: "computeSearchResult",
   },
 
   methods: {
@@ -374,6 +388,7 @@ export default {
       if (!this.computingState.finished) {
         this.computingState.restartCompute = true;
       } else {
+        this.computeSearchCorrection();
         this.computeSearchResultAsync()
           .then(() => delayedValue(100))
           .then(() => {
@@ -429,6 +444,29 @@ export default {
       }
       this.computingState.finished = true;
       this.computingState.progress = 0;
+    },
+    computeSearchCorrection() {
+      let { searchText } = this;
+      let newSearchText = searchText;
+      if (newSearchText) {
+        Corrections.words.forEach((wordCorrection) => {
+          newSearchText = newSearchText.replace(
+            wordCorrection[0],
+            wordCorrection[1]
+          );
+        });
+        Corrections.patterns.forEach((wordCorrection) => {
+          newSearchText = newSearchText.replace(
+            new RegExp(wordCorrection[0], "g"),
+            wordCorrection[1]
+          );
+        });
+        if (newSearchText != searchText) {
+          this.searchCorrection = newSearchText;
+          return;
+        }
+      }
+      this.searchCorrection = null;
     },
   },
 
