@@ -12,6 +12,7 @@
         prepend-icon="mdi-magnify"
         v-model="searchText"
         label="搜索"
+        :placeholder="searchBoxPlaceholder"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
       ></v-text-field>
@@ -53,9 +54,9 @@
           <v-list-item disabled>
             <v-list-item-title>版本：{{ version }}</v-list-item-title>
           </v-list-item>
-          <v-list-item link @click="fullLoadMode = !fullLoadMode">
+          <v-list-item link @click="useOptimizedList = !useOptimizedList">
             <v-list-item-title>
-              性能优化：{{ fullLoadMode ? "关闭" : "开启" }}
+              性能优化：{{ useOptimizedList ? "开启" : "关闭" }}
             </v-list-item-title>
           </v-list-item>
           <v-list-item link v-if="pwa.installReady" @click="pwaPromptInstall()">
@@ -101,61 +102,50 @@
     </v-app-bar>
     <v-main>
       <div class="ma-3" v-show="!searchResult.length && searchText">
-        <v-alert outlined text type="info" v-if="searchCorrection">
+        <v-alert outlined text type="info">
           <v-row align="center">
             <v-col class="grow">
-              未找到与“{{ searchText }}”相关的 ID，您要找的是不是“{{ searchCorrection }}”？
+              {{ searchResultEmptyPrompt }}
             </v-col>
-            <v-col class="shrink pa-0 pr-3">
+            <v-col class="shrink pa-0 pr-3" v-if="searchCorrection">
               <v-btn text color="info" @click="searchText = searchCorrection">
                 更正
               </v-btn>
             </v-col>
           </v-row>
         </v-alert>
-        <v-alert outlined text type="info" v-else>
-          未找到与“{{ searchText }}”相关的 ID
-        </v-alert>
       </div>
-      <v-list v-show="searchResult.length" v-if="fullLoadMode">
-        <v-list-item
-          ripple
-          v-for="(item, index) in searchResult"
-          :key="index"
-          @click="showIDDetail(item)"
-        >
-          <v-list-item-content>
-            <v-list-item-title>
-              {{ item.key }}
-            </v-list-item-title>
-            <v-list-item-subtitle v-if="item.value">
-              {{ item.value }}
-            </v-list-item-subtitle>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-      <v-virtual-scroll
+      <optimizable-list
         :items="searchResult"
         :height="windowHeight - 65"
+        :optimized="useOptimizedList"
         item-height="62px"
-        bench="1"
         v-show="searchResult.length"
         v-resize="onWindowSizeChanged"
-        v-else
       >
         <template v-slot:default="{ item }">
           <v-list-item ripple :key="item.key" @click="showIDDetail(item)">
             <v-list-item-content>
-              <v-list-item-title>
+              <v-list-item-title v-if="item.keyHighlight">
+                <span>{{ item.keyPre }}</span>
+                <span class="highlight--text">{{ item.keyHl }}</span>
+                <span>{{ item.keyPost }}</span>
+              </v-list-item-title>
+              <v-list-item-title v-else>
                 {{ item.key }}
               </v-list-item-title>
-              <v-list-item-subtitle v-if="item.value">
+              <v-list-item-subtitle v-if="item.valueHighlight">
+                <span>{{ item.valuePre }}</span>
+                <span class="highlight--text">{{ item.valueHl }}</span>
+                <span>{{ item.valuePost }}</span>
+              </v-list-item-subtitle>
+              <v-list-item-subtitle v-else-if="item.value">
                 {{ item.value }}
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
         </template>
-      </v-virtual-scroll>
+      </optimizable-list>
     </v-main>
     <v-snackbar v-model="snackbar.visible" :timeout="snackbar.timeout">
       {{ snackbar.text }}
@@ -205,7 +195,8 @@
 
 <script>
 import PWA from "./pwa";
-import Corrections from "./corrections";
+import Corrections from "./assets/corrections";
+import OptimizableList from "./components/OptimizableList.vue";
 
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -244,6 +235,8 @@ const branchList = [
 export default {
   name: "App",
 
+  components: { OptimizableList },
+
   data: () => ({
     loading: true,
     pwa: {
@@ -273,7 +266,7 @@ export default {
     publishTime: "",
     offlineUrl: "",
     selectedEnumIndex: 0,
-    fullLoadMode: false,
+    useOptimizedList: true,
     searchBoxFocus: false,
     searchText: null,
     computingState: {
@@ -281,6 +274,7 @@ export default {
       progress: 0,
       restartCompute: false,
     },
+    searchEnumLength: 0,
     searchResult: [],
     searchCorrection: null,
   }),
@@ -298,6 +292,23 @@ export default {
     },
     selectedEnum() {
       return this.enums[this.selectedEnumMeta.id];
+    },
+    searchBoxPlaceholder() {
+      return "在 " + this.searchEnumLength + " 个条目中搜索";
+    },
+    searchResultEmptyPrompt() {
+      if (this.searchCorrection) {
+        return (
+          "未找到与“" +
+          this.searchText +
+          "”相关的条目，" +
+          "您要找的是不是“" +
+          this.searchCorrection +
+          "”？"
+        );
+      } else {
+        return "未找到与“" + this.searchText + "”相关的条目";
+      }
     },
   },
 
@@ -410,22 +421,58 @@ export default {
         updateCounts = 0;
       if (!selectedEnum) return;
       if (!searchText) searchText = "";
+      let searchLength = searchText.length,
+        searchTextLowerCase = searchText.toLowerCase();
       this.computingState.finished = false;
       this.computingState.progress = 0;
       keys = Object.keys(selectedEnum);
       this.searchResult.length = 0;
+      this.searchEnumLength = keys.length;
       for (i = 0; i < keys.length; i += itemPerFrame) {
         chunk = keys.slice(i, i + itemPerFrame);
-        if (searchText) {
-          chunk = chunk.filter((key) => {
-            return (
-              key.includes(searchText) || selectedEnum[key].includes(searchText)
-            );
+        if (searchLength) {
+          chunk = chunk
+            .map((key) => {
+              let value = selectedEnum[key];
+              let indexInKey = key.toLowerCase().indexOf(searchTextLowerCase);
+              let indexInValue = value.toLowerCase().indexOf(searchTextLowerCase);
+              if (indexInKey >= 0 || indexInValue >= 0) {
+                let result = { key, value };
+                if (indexInKey >= 0) {
+                  result = {
+                    ...result,
+                    keyHighlight: true,
+                    keyPre: key.slice(0, indexInKey),
+                    keyHl: key.slice(indexInKey, indexInKey + searchLength),
+                    keyPost: key.slice(indexInKey + searchLength),
+                  };
+                }
+                if (indexInValue >= 0) {
+                  result = {
+                    ...result,
+                    valueHighlight: true,
+                    valuePre: value.slice(0, indexInValue),
+                    valueHl: value.slice(
+                      indexInValue,
+                      indexInValue + searchLength
+                    ),
+                    valuePost: value.slice(indexInValue + searchLength),
+                  };
+                }
+                return result;
+              } else {
+                return null;
+              }
+            })
+            .filter((item) => item != null);
+        } else {
+          chunk = chunk.map((key) => {
+            return {
+              key,
+              value: selectedEnum[key],
+            };
           });
         }
-        chunk = chunk.map((key) => {
-          return { key, value: selectedEnum[key] };
-        });
         this.computingState.progress = (i / keys.length) * 100;
         while (chunk.length > 0) {
           this.searchResult.push(...chunk.splice(0, elementPerFrame));
