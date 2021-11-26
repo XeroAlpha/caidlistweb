@@ -28,7 +28,7 @@
             v-bind="attrs"
             v-on="on"
           >
-            {{ selectedEnumMeta.title }}
+            {{ selectedEnumMeta.name }}
             <v-icon class="ml-2">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
@@ -37,14 +37,13 @@
             v-model="selectedEnumIndex"
             mandatory
             color="primary"
-            @change="computeSearchResult"
           >
             <v-list-item
-              v-for="(enumName, i) in enumNamesForList"
+              v-for="(enumMeta, i) in enumMetaList"
               :key="i"
               @click="focusSearchBox()"
             >
-              <v-list-item-title>{{ enumName }}</v-list-item-title>
+              <v-list-item-title>{{ enumMeta.name }}</v-list-item-title>
             </v-list-item>
           </v-list-item-group>
           <v-divider></v-divider>
@@ -101,26 +100,47 @@
       ></v-progress-linear>
     </v-app-bar>
     <v-main>
-      <div class="ma-3" v-show="!searchResult.length && searchText">
-        <v-alert outlined text type="info">
-          <v-row align="center">
-            <v-col class="grow">
-              {{ searchResultEmptyPrompt }}
-            </v-col>
-            <v-col class="shrink pa-0 pr-3" v-if="searchCorrection">
-              <v-btn text color="info" @click="searchText = searchCorrection">
-                更正
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-alert>
+      <v-list v-show="!searchText && isGlobalSearching">
+        <v-list-item>
+          <v-list-item-content>
+            <button-alert
+              button
+              button-text="使用方法"
+              @click="howToUse()"
+            >
+              欢迎使用MCBEID表！
+            </button-alert>
+          </v-list-item-content>
+        </v-list-item>
+        <v-list-item
+          v-for="(enumMeta, i) in enumMetaList"
+          :key="i"
+          @click="(selectedEnumIndex = i), focusSearchBox()"
+        >
+          <v-list-item-content>
+            <v-list-item-title>{{ enumMeta.name }}</v-list-item-title>
+            <v-list-item-subtitle>{{
+              enumMeta.description
+            }}</v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+      <div v-show="searchResultEmpty && searchText">
+        <button-alert
+          :button="searchCorrection"
+          button-text="更正"
+          @click="searchText = searchCorrection"
+          class="ma-3"
+        >
+          {{ searchResultEmptyPrompt }}
+        </button-alert>
       </div>
       <optimizable-list
         :items="searchResult"
         :height="windowHeight - 65"
         :optimized="useOptimizedList"
         item-height="62px"
-        v-show="searchResult.length"
+        v-show="!searchResultEmpty"
         v-resize="onWindowSizeChanged"
       >
         <template v-slot:default="{ item }">
@@ -194,9 +214,11 @@
 </template>
 
 <script>
-import PWA from "./pwa";
+import PWA from "./plugins/pwa";
 import Corrections from "./assets/corrections";
+import branchList from "./assets/branchList";
 import OptimizableList from "./components/OptimizableList.vue";
+import ButtonAlert from "./components/ButtonInfoAlert.vue";
 
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -206,36 +228,23 @@ function nextAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-const branchList = [
-  {
-    id: "vanilla",
-    name: "原版",
-    dataUrl: "./data.json",
-    offlineUrl: "./latest.zip",
-  },
-  {
-    id: "education",
-    name: "教育版",
-    dataUrl: "./data.education.json",
-    offlineUrl: "./latest.education.zip",
-  },
-  {
-    id: "experiment",
-    name: "实验性玩法",
-    dataUrl: "./data.experiment.json",
-    offlineUrl: "./latest.experiment.zip",
-  },
-  {
-    id: "translator",
-    name: "翻译专用",
-    dataUrl: "./data.translator.json",
-    offlineUrl: "./latest.translator.zip",
-  },
-];
+const GlobalEnumMeta = {
+  id: "#global",
+  name: "全局",
+  description: "搜索全部条目",
+};
+
+// Performance Threshold
+const itemPerFrame = 1,
+  elementPerFrame = 50,
+  updateCountPerFrame = 100,
+  searchCountPerFrame = 300,
+  globalSearchThreshold = 100;
+
 export default {
   name: "App",
 
-  components: { OptimizableList },
+  components: { OptimizableList, ButtonAlert },
 
   data: () => ({
     loading: true,
@@ -259,7 +268,7 @@ export default {
       value: "",
     },
     windowHeight: 0,
-    enumNames: [["loading", "正在加载"]],
+    enumNames: [],
     enums: {},
     branchName: "",
     version: "",
@@ -273,28 +282,45 @@ export default {
       finished: true,
       progress: 0,
       restartCompute: false,
+      updateCount: 0,
+      searchCount: 0,
     },
     searchEnumLength: 0,
     searchResult: [],
+    searchResultEmpty: false,
     searchCorrection: null,
   }),
 
   computed: {
-    enumNamesForList() {
-      return this.enumNames.map((e) => e[1]);
+    enumMetaList() {
+      return [
+        GlobalEnumMeta,
+        ...this.enumNames.map((e) => ({
+          id: e[0],
+          name: e[1],
+          description: e[2],
+        })),
+      ];
     },
     selectedEnumMeta() {
-      let meta = this.enumNames[this.selectedEnumIndex];
-      return {
-        id: meta[0],
-        title: meta[1],
-      };
+      return this.enumMetaList[this.selectedEnumIndex];
+    },
+    isGlobalSearching() {
+      return this.selectedEnumMeta.id == GlobalEnumMeta.id;
     },
     selectedEnum() {
-      return this.enums[this.selectedEnumMeta.id];
+      if (this.isGlobalSearching) {
+        return null;
+      } else {
+        return this.enums[this.selectedEnumMeta.id];
+      }
     },
     searchBoxPlaceholder() {
-      return "在 " + this.searchEnumLength + " 个条目中搜索";
+      if (this.isGlobalSearching) {
+        return GlobalEnumMeta.description;
+      } else {
+        return "在 " + this.searchEnumLength + " 个条目中搜索";
+      }
     },
     searchResultEmptyPrompt() {
       if (this.searchCorrection) {
@@ -314,6 +340,7 @@ export default {
 
   watch: {
     searchText: "computeSearchResult",
+    selectedEnumIndex: "computeSearchResult",
   },
 
   methods: {
@@ -410,87 +437,132 @@ export default {
           });
       }
     },
-    async computeSearchResultAsync() {
-      const itemPerFrame = 1,
-        elementPerFrame = 50,
-        updateCountPerFrame = 100;
-      let { selectedEnum, searchText } = this;
-      let i,
-        chunk,
-        keys,
-        updateCounts = 0;
-      if (!selectedEnum) return;
-      if (!searchText) searchText = "";
-      let searchLength = searchText.length,
-        searchTextLowerCase = searchText.toLowerCase();
-      this.computingState.finished = false;
-      this.computingState.progress = 0;
+    computeSearchInChunk(chunk, selectedEnum, searchTextLowerCase) {
+      const searchLength = searchTextLowerCase.length;
+      if (searchLength) {
+        chunk = chunk
+          .map((key) => {
+            let value = selectedEnum[key];
+            let indexInKey = key.toLowerCase().indexOf(searchTextLowerCase);
+            let indexInValue = value.toLowerCase().indexOf(searchTextLowerCase);
+            if (indexInKey >= 0 || indexInValue >= 0) {
+              let result = { key, value };
+              if (indexInKey >= 0) {
+                result = {
+                  ...result,
+                  keyHighlight: true,
+                  keyPre: key.slice(0, indexInKey),
+                  keyHl: key.slice(indexInKey, indexInKey + searchLength),
+                  keyPost: key.slice(indexInKey + searchLength),
+                };
+              }
+              if (indexInValue >= 0) {
+                result = {
+                  ...result,
+                  valueHighlight: true,
+                  valuePre: value.slice(0, indexInValue),
+                  valueHl: value.slice(
+                    indexInValue,
+                    indexInValue + searchLength
+                  ),
+                  valuePost: value.slice(indexInValue + searchLength),
+                };
+              }
+              return result;
+            } else {
+              return null;
+            }
+          })
+          .filter((item) => item != null);
+      } else {
+        chunk = chunk.map((key) => {
+          return {
+            key,
+            value: selectedEnum[key],
+          };
+        });
+      }
+      return chunk;
+    },
+    async computeSearchResultForEnum(
+      selectedEnum,
+      searchTextLowerCase,
+      progressOffset
+    ) {
+      let i, keys, chunk;
       keys = Object.keys(selectedEnum);
-      this.searchResult.length = 0;
       this.searchEnumLength = keys.length;
       for (i = 0; i < keys.length; i += itemPerFrame) {
         chunk = keys.slice(i, i + itemPerFrame);
-        if (searchLength) {
-          chunk = chunk
-            .map((key) => {
-              let value = selectedEnum[key];
-              let indexInKey = key.toLowerCase().indexOf(searchTextLowerCase);
-              let indexInValue = value.toLowerCase().indexOf(searchTextLowerCase);
-              if (indexInKey >= 0 || indexInValue >= 0) {
-                let result = { key, value };
-                if (indexInKey >= 0) {
-                  result = {
-                    ...result,
-                    keyHighlight: true,
-                    keyPre: key.slice(0, indexInKey),
-                    keyHl: key.slice(indexInKey, indexInKey + searchLength),
-                    keyPost: key.slice(indexInKey + searchLength),
-                  };
-                }
-                if (indexInValue >= 0) {
-                  result = {
-                    ...result,
-                    valueHighlight: true,
-                    valuePre: value.slice(0, indexInValue),
-                    valueHl: value.slice(
-                      indexInValue,
-                      indexInValue + searchLength
-                    ),
-                    valuePost: value.slice(indexInValue + searchLength),
-                  };
-                }
-                return result;
-              } else {
-                return null;
-              }
-            })
-            .filter((item) => item != null);
-        } else {
-          chunk = chunk.map((key) => {
-            return {
-              key,
-              value: selectedEnum[key],
-            };
-          });
-        }
-        this.computingState.progress = (i / keys.length) * 100;
+        this.computingState.searchCount += chunk.length;
+        chunk = this.computeSearchInChunk(
+          chunk,
+          selectedEnum,
+          searchTextLowerCase
+        );
+        this.computingState.progress =
+          (i / keys.length) * progressOffset[1] + progressOffset[0];
         while (chunk.length > 0) {
           this.searchResult.push(...chunk.splice(0, elementPerFrame));
-          updateCounts++;
+          this.computingState.updateCounts++;
           if (
-            (this.searchBoxFocus && this.fullLoadMode) ||
-            updateCounts > updateCountPerFrame
+            (this.searchBoxFocus && !this.useOptimizedList) ||
+            this.computingState.updateCounts > updateCountPerFrame
           ) {
-            updateCounts = 0;
+            this.computingState.updateCounts = 0;
             await nextAnimationFrame();
           }
+        }
+        if (this.computingState.searchCount > searchCountPerFrame) {
+          this.computingState.searchCount = 0;
+          await nextAnimationFrame();
         }
         if (this.computingState.restartCompute) {
           break;
         }
       }
+    },
+    async computeSearchResultAsync() {
+      let { searchText } = this;
+      if (!searchText) searchText = "";
+      let searchTextLowerCase = searchText.toLowerCase();
+      this.computingState.finished = false;
+      this.computingState.progress = 0;
+      this.computingState.updateCount = 0;
+      this.computingState.searchCount = 0;
+      this.searchResult.length = 0;
+      if (this.isGlobalSearching) {
+        if (searchText) {
+          let { enumMetaList } = this;
+          let i,
+            progressPerEnum = 100 / enumMetaList.length;
+          for (i = 1; i < enumMetaList.length; i++) {
+            let selectedEnum = this.enums[enumMetaList[i].id];
+            await this.computeSearchResultForEnum(
+              selectedEnum,
+              searchTextLowerCase,
+              [progressPerEnum * i, progressPerEnum]
+            );
+            if (
+              this.computingState.restartCompute ||
+              this.searchResult.length > globalSearchThreshold
+            ) {
+              break;
+            }
+          }
+        }
+      } else {
+        let { selectedEnum } = this;
+        if (!selectedEnum) return;
+        await this.computeSearchResultForEnum(
+          selectedEnum,
+          searchTextLowerCase,
+          [0, 100]
+        );
+      }
       this.computingState.finished = true;
       this.computingState.progress = 0;
+      this.searchResultEmpty = this.searchResult.length == 0;
     },
     computeSearchCorrection() {
       let { searchText } = this;
@@ -515,10 +587,12 @@ export default {
       }
       this.searchCorrection = null;
     },
+    howToUse() {
+      this.showSnackBar("ProjectXero：我正在写使用方法，请各位稍等几日。");
+    }
   },
 
   created: function () {
-    document.title = "MCBEID表";
     PWA.on("ready", () => (this.pwa.ready = true))
       .on("updateReady", () => (this.pwa.updateReady = true))
       .on("installReady", () => (this.pwa.installReady = true));

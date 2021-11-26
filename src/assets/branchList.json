@@ -1,0 +1,26 @@
+[
+    {
+        "id": "vanilla",
+        "name": "原版",
+        "dataUrl": "./data.json",
+        "offlineUrl": "./latest.zip"
+    },
+    {
+        "id": "education",
+        "name": "教育版",
+        "dataUrl": "./data.education.json",
+        "offlineUrl": "./latest.education.zip"
+    },
+    {
+        "id": "experiment",
+        "name": "实验性玩法",
+        "dataUrl": "./data.experiment.json",
+        "offlineUrl": "./latest.experiment.zip"
+    },
+    {
+        "id": "translator",
+        "name": "翻译专用",
+        "dataUrl": "./data.translator.json",
+        "offlineUrl": "./latest.translator.zip"
+    }
+]

@@ -4,6 +4,9 @@ import { EventEmitter } from "events";
 class PWAManager extends EventEmitter {  
   constructor() {
     super();
+    if (process.env.NODE_ENV === "production") {
+      this.prepare();
+    }
   }
 
   workerState = "uninitialized";
@@ -69,10 +72,4 @@ class PWAManager extends EventEmitter {
   }
 }
 
-const PWA = new PWAManager();
-
-export default PWA;
-
-if (process.env.NODE_ENV === "production") {
-  PWA.prepare();
-}
+export default new PWAManager();

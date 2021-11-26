@@ -17,6 +17,17 @@
 
 <script>
 export default {
-  props: ["items", "itemHeight", "height", "optimized"],
+  props: {
+    items: {
+      type: Array,
+      default: () => [],
+    },
+    itemHeight: {
+      type: [Number, String],
+      required: true,
+    },
+    height: [Number, String],
+    optimized: Boolean
+  },
 };
 </script>
