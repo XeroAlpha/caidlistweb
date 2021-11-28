@@ -58,6 +58,11 @@
               性能优化：{{ useOptimizedList ? "开启" : "关闭" }}
             </v-list-item-title>
           </v-list-item>
+          <v-list-item link @click="darkMode = !darkMode">
+            <v-list-item-title>
+              深色模式：{{ darkMode ? "开启" : "关闭" }}
+            </v-list-item-title>
+          </v-list-item>
           <v-list-item link v-if="pwa.installReady" @click="pwaPromptInstall()">
             <v-list-item-title>安装离线版</v-list-item-title>
           </v-list-item>
@@ -268,6 +273,7 @@ export default {
       value: "",
     },
     windowHeight: 0,
+    darkMode: false,
     enumNames: [],
     enums: {},
     branchName: "",
@@ -341,6 +347,9 @@ export default {
   watch: {
     searchText: "computeSearchResult",
     selectedEnumIndex: "computeSearchResult",
+    darkMode(newValue) {
+      this.$vuetify.theme.dark = newValue;
+    }
   },
 
   methods: {

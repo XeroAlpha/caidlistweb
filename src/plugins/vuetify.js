@@ -8,7 +8,10 @@ export default new Vuetify({
   theme: {
     themes: {
       light: {
-        highlight: colors.red.accent3
+        highlight: colors.red
+      },
+      dark: {
+        highlight: colors.yellow
       }
     }
   }
