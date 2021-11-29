@@ -89,10 +89,10 @@
           <v-list-item
             v-for="(branchMeta, i) in branchMenu.list"
             :key="i"
-            @click="closeBranchMenuAndLoadBranch(branchMeta)"
+            @click="closeBranchMenuAndLoadBranch(i)"
           >
             <v-list-item-title>{{ branchMeta.name }}</v-list-item-title>
-            <v-icon v-if="branchMeta.name == branchName">mdi-check</v-icon>
+            <v-icon v-if="branchIndex == i">mdi-check</v-icon>
           </v-list-item>
         </v-list>
       </v-dialog>
@@ -108,11 +108,7 @@
       <v-list v-show="!searchText && isGlobalSearching">
         <v-list-item>
           <v-list-item-content>
-            <button-alert
-              button
-              button-text="使用方法"
-              @click="howToUse()"
-            >
+            <button-alert button button-text="使用方法" @click="howToUse()">
               欢迎使用MCBEID表！
             </button-alert>
           </v-list-item-content>
@@ -233,6 +229,28 @@ function nextAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
+function mapLocalStorage(thisObj, namespace, storageKeys) {
+  const prefix = namespace ? namespace + ":" : "";
+  storageKeys.forEach((key) => {
+    const defaultValue = thisObj[key];
+    let reader, writer;
+    if (typeof defaultValue == "number") {
+      reader = (v) => Number(v);
+      writer = (v) => String(v);
+    } else if (typeof defaultValue == "boolean") {
+      reader = (v) => v == "1";
+      writer = (v) => (v ? "1" : "0");
+    } else {
+      reader = (v) => v;
+      writer = (v) => (v ? v : "");
+    }
+    thisObj[key] = reader(localStorage.getItem(prefix + key) ?? defaultValue);
+    thisObj.$watch(key, (newValue) => {
+      localStorage.setItem(prefix + key, writer(newValue));
+    });
+  });
+}
+
 const GlobalEnumMeta = {
   id: "#global",
   name: "全局",
@@ -274,6 +292,7 @@ export default {
     },
     windowHeight: 0,
     darkMode: false,
+    branchIndex: 0,
     enumNames: [],
     enums: {},
     branchName: "",
@@ -309,7 +328,7 @@ export default {
       ];
     },
     selectedEnumMeta() {
-      return this.enumMetaList[this.selectedEnumIndex];
+      return this.enumMetaList[this.selectedEnumIndex] || GlobalEnumMeta;
     },
     isGlobalSearching() {
       return this.selectedEnumMeta.id == GlobalEnumMeta.id;
@@ -347,9 +366,12 @@ export default {
   watch: {
     searchText: "computeSearchResult",
     selectedEnumIndex: "computeSearchResult",
-    darkMode(newValue) {
-      this.$vuetify.theme.dark = newValue;
-    }
+    darkMode: {
+      handler(newValue) {
+        this.$vuetify.theme.dark = newValue;
+      },
+      immediate: true,
+    },
   },
 
   methods: {
@@ -381,19 +403,21 @@ export default {
     onWindowSizeChanged() {
       this.windowHeight = window.innerHeight;
     },
-    async loadBranch(branchMeta) {
+    async loadCurrentBranch(restoringState) {
+      const branchMeta = branchList[this.branchIndex] || branchList[0];
       this.offlineUrl = branchMeta.offlineUrl;
+      this.loading = true;
       try {
         const json = await (await fetch(branchMeta.dataUrl)).json();
-        this.loading = false;
         this.version = json.version;
         this.branchName = json.branchName;
         this.enums = json.enums;
-        if (this.enumNames.length != json.names.length) {
+        if (!restoringState && this.enumNames.length != json.names.length) {
           this.selectedEnumIndex = 0;
         }
         this.enumNames = json.names;
         this.publishTime = new Date(json.publishTime).toLocaleDateString();
+        this.loading = false;
         this.computeSearchResult();
         return true;
       } catch (err) {
@@ -401,9 +425,10 @@ export default {
       }
       return false;
     },
-    closeBranchMenuAndLoadBranch(branchMeta) {
+    closeBranchMenuAndLoadBranch(index) {
       this.branchMenu.visible = false;
-      this.loadBranch(branchMeta).then((success) => {
+      this.branchIndex = index;
+      this.loadCurrentBranch().then((success) => {
         if (success) {
           this.showSnackBar("切换至分支：" + this.branchName);
         }
@@ -432,6 +457,7 @@ export default {
       document.querySelector("#search_box").focus();
     },
     computeSearchResult() {
+      if (this.loading) return;
       if (!this.computingState.finished) {
         this.computingState.restartCompute = true;
       } else {
@@ -539,7 +565,7 @@ export default {
       this.computingState.progress = 0;
       this.computingState.updateCount = 0;
       this.computingState.searchCount = 0;
-      this.searchResult.length = 0;
+      this.searchResult.splice(0); // remove all elements
       if (this.isGlobalSearching) {
         if (searchText) {
           let { enumMetaList } = this;
@@ -598,17 +624,24 @@ export default {
     },
     howToUse() {
       this.showSnackBar("ProjectXero：我正在写使用方法，请各位稍等几日。");
-    }
+    },
   },
 
-  created: function () {
+  mounted: function () {
     PWA.on("ready", () => (this.pwa.ready = true))
       .on("updateReady", () => (this.pwa.updateReady = true))
       .on("installReady", () => (this.pwa.installReady = true));
     this.pwa.ready = PWA.workerState == "ready";
     this.pwa.installReady = PWA.installPrompt != null;
     this.pwa.updateReady = PWA.updatedWorker != null;
-    this.loadBranch(branchList[0]);
+    mapLocalStorage(this, "caidlist", [
+      "useOptimizedList",
+      "darkMode",
+      "branchIndex",
+      "selectedEnumIndex",
+      "searchText",
+    ]);
+    this.loadCurrentBranch(true);
   },
 };
 </script>
