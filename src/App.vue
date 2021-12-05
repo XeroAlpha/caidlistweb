@@ -84,14 +84,17 @@
           </v-list-item>
         </v-list>
       </v-menu>
-      <v-dialog v-model="branchMenu.visible" max-width="300px">
+      <v-dialog v-model="branchMenu.visible" max-width="500px">
         <v-list class="overflow-y-auto" max-height="90vh">
           <v-list-item
             v-for="(branchMeta, i) in branchMenu.list"
             :key="i"
             @click="closeBranchMenuAndLoadBranch(i)"
           >
-            <v-list-item-title>{{ branchMeta.name }}</v-list-item-title>
+            <v-list-item-content>
+              <v-list-item-title>{{ branchMeta.name }}</v-list-item-title>
+              <v-list-item-subtitle>{{ branchMeta.description }}</v-list-item-subtitle>
+            </v-list-item-content>
             <v-icon v-if="branchIndex == i">mdi-check</v-icon>
           </v-list-item>
         </v-list>
@@ -217,7 +220,7 @@
 <script>
 import PWA from "./plugins/pwa";
 import Corrections from "./assets/corrections";
-import branchList from "./assets/branchList";
+import { dataVersion, branchList } from "./assets/dataInfo";
 import OptimizableList from "./components/OptimizableList.vue";
 import ButtonAlert from "./components/ButtonInfoAlert.vue";
 
@@ -295,9 +298,9 @@ export default {
     branchIndex: 0,
     enumNames: [],
     enums: {},
+    lastDataVersion: "",
     branchName: "",
     version: "",
-    publishTime: "",
     offlineUrl: "",
     selectedEnumIndex: 0,
     useOptimizedList: true,
@@ -416,7 +419,6 @@ export default {
           this.selectedEnumIndex = 0;
         }
         this.enumNames = json.names;
-        this.publishTime = new Date(json.publishTime).toLocaleDateString();
         this.loading = false;
         this.computeSearchResult();
         return true;
@@ -635,6 +637,7 @@ export default {
     this.pwa.installReady = PWA.installPrompt != null;
     this.pwa.updateReady = PWA.updatedWorker != null;
     mapLocalStorage(this, "caidlist", [
+      "lastDataVersion",
       "useOptimizedList",
       "darkMode",
       "branchIndex",
@@ -642,6 +645,12 @@ export default {
       "searchText",
     ]);
     this.loadCurrentBranch(true);
+    if (this.lastDataVersion != dataVersion) {
+      if (this.lastDataVersion) {
+        this.showSnackBar(`游戏版本已更新：${this.lastDataVersion} -> ${dataVersion}`);
+      }
+      this.lastDataVersion = dataVersion;
+    }
   },
 };
 </script>

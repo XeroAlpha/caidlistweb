@@ -27,4 +27,5 @@ pnpm-debug.log*
 /public/data.*.json
 /public/latest.zip
 /public/latest.*.zip
+/src/assets/dataInfo.json
 
