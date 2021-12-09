@@ -92,8 +92,12 @@
             @click="closeBranchMenuAndLoadBranch(i)"
           >
             <v-list-item-content>
-              <v-list-item-title>{{ branchMeta.name }}</v-list-item-title>
-              <v-list-item-subtitle>{{ branchMeta.description }}</v-list-item-subtitle>
+              <v-list-item-title>
+                {{ branchMeta.name }}
+              </v-list-item-title>
+              <v-list-item-subtitle>
+                {{ branchMeta.description }}
+              </v-list-item-subtitle>
             </v-list-item-content>
             <v-icon v-if="branchIndex == i">mdi-check</v-icon>
           </v-list-item>
@@ -171,58 +175,21 @@
         </template>
       </optimizable-list>
     </v-main>
-    <v-snackbar v-model="snackbar.visible" :timeout="snackbar.timeout">
-      {{ snackbar.text }}
-      <template v-slot:action="{ attrs }">
-        <v-btn
-          color="pink"
-          text
-          v-bind="attrs"
-          @click="snackbar.visible = false"
-        >
-          关闭
-        </v-btn>
-      </template>
-    </v-snackbar>
-    <v-dialog scrollable v-model="idDetailDialog.visible" max-width="400px">
-      <v-card>
-        <v-card-title>
-          {{ idDetailDialog.key }}
-        </v-card-title>
-        <v-card-text>
-          {{ idDetailDialog.value }}
-        </v-card-text>
-        <v-card-actions>
-          <v-btn
-            text
-            color="primary"
-            @click="copyTextAndCloseDetailDialog(idDetailDialog.key)"
-          >
-            复制ID
-          </v-btn>
-          <v-btn
-            text
-            color="primary"
-            @click="copyTextAndCloseDetailDialog(idDetailDialog.value)"
-          >
-            复制描述
-          </v-btn>
-          <v-spacer></v-spacer>
-          <v-btn text color="primary" @click="idDetailDialog.visible = false">
-            关闭
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <id-copy-dialog
+      v-model="idDetailDialog.visible"
+      :idKey="idDetailDialog.key"
+      :idValue="idDetailDialog.value"
+    ></id-copy-dialog>
   </v-app>
 </template>
 
 <script>
 import PWA from "./plugins/pwa";
-import Corrections from "./assets/corrections";
-import { dataVersion, branchList } from "./assets/dataInfo";
+import Corrections from "./assets/corrections.json";
+import { dataVersion, branchList } from "./assets/dataInfo.json";
 import OptimizableList from "./components/OptimizableList.vue";
 import ButtonAlert from "./components/ButtonInfoAlert.vue";
+import IdCopyDialog from "./components/IDCopyDialog.vue";
 
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -270,7 +237,7 @@ const itemPerFrame = 1,
 export default {
   name: "App",
 
-  components: { OptimizableList, ButtonAlert },
+  components: { OptimizableList, ButtonAlert, IdCopyDialog },
 
   data: () => ({
     loading: true,
@@ -388,20 +355,15 @@ export default {
     },
     async pwaCheckUpdate() {
       try {
-        this.showSnackBar("正在检测更新");
+        this.$toast("正在检测更新");
         if (await PWA.checkUpdate()) {
-          this.showSnackBar("更新正在安装，稍后将自动应用");
+          this.$toast("更新正在安装，稍后将自动应用");
         } else {
-          this.showSnackBar("已是最新版本");
+          this.$toast("已是最新版本");
         }
       } catch (err) {
-        this.showSnackBar("获取更新失败：" + err);
+        this.$toast("获取更新失败：" + err);
       }
-    },
-    showSnackBar(text) {
-      this.snackbar.visible = true;
-      this.snackbar.text = text;
-      this.snackbar.timeout = 5000;
     },
     onWindowSizeChanged() {
       this.windowHeight = window.innerHeight;
@@ -423,7 +385,7 @@ export default {
         this.computeSearchResult();
         return true;
       } catch (err) {
-        this.showSnackBar("获取数据失败：" + err);
+        this.$toast("获取数据失败：" + err);
       }
       return false;
     },
@@ -432,7 +394,7 @@ export default {
       this.branchIndex = index;
       this.loadCurrentBranch().then((success) => {
         if (success) {
-          this.showSnackBar("切换至分支：" + this.branchName);
+          this.$toast("切换至分支：" + this.branchName);
         }
       });
     },
@@ -440,20 +402,6 @@ export default {
       this.idDetailDialog.visible = true;
       this.idDetailDialog.key = kv.key;
       this.idDetailDialog.value = kv.value;
-    },
-    copyTextAndCloseDetailDialog(text) {
-      this.idDetailDialog.visible = false;
-      if (text) {
-        this.copyText(text);
-      }
-    },
-    async copyText(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        this.showSnackBar(`复制”${text}“成功`);
-      } catch (err) {
-        this.showSnackBar(`复制失败，请尝试在其他浏览器打开并复制`);
-      }
     },
     focusSearchBox() {
       document.querySelector("#search_box").focus();
@@ -625,7 +573,7 @@ export default {
       this.searchCorrection = null;
     },
     howToUse() {
-      this.showSnackBar("ProjectXero：我正在写使用方法，请各位稍等几日。");
+      this.$toast("ProjectXero：我正在写使用方法，请各位稍等几日。");
     },
   },
 
@@ -647,7 +595,9 @@ export default {
     this.loadCurrentBranch(true);
     if (this.lastDataVersion != dataVersion) {
       if (this.lastDataVersion) {
-        this.showSnackBar(`游戏版本已更新：${this.lastDataVersion} -> ${dataVersion}`);
+        this.$toast(
+          `游戏版本已更新：${this.lastDataVersion} -> ${dataVersion}`
+        );
       }
       this.lastDataVersion = dataVersion;
     }
