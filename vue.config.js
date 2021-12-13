@@ -27,7 +27,11 @@ module.exports = {
         },
         workboxPluginMode: "GenerateSW",
         workboxOptions: {
-            exclude: [/latest(\.\S+)?\.zip$/, /\.(js|css)\.map$/i],
+            exclude: [
+                /\.(js|css)\.map$/i,
+                /\.zip/i,
+                /data\/(.*)index.json/i
+            ],
             runtimeCaching: [
                 {
                     urlPattern: new RegExp("^https://fonts.googleapis.com/"),

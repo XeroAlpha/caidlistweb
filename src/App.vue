@@ -50,8 +50,8 @@
           <v-list-item link @click="branchMenu.visible = true">
             <v-list-item-title>分支：{{ branchName }}</v-list-item-title>
           </v-list-item>
-          <v-list-item disabled>
-            <v-list-item-title>版本：{{ version }}</v-list-item-title>
+          <v-list-item link>
+            <v-list-item-title>版本：{{ packageVersion }}</v-list-item-title>
           </v-list-item>
           <v-list-item link @click="useOptimizedList = !useOptimizedList">
             <v-list-item-title>
@@ -63,13 +63,13 @@
               深色模式：{{ darkMode ? "开启" : "关闭" }}
             </v-list-item-title>
           </v-list-item>
-          <v-list-item link v-if="pwa.installReady" @click="pwaPromptInstall()">
+          <v-list-item link v-if="$pwa.installReady" @click="$pwa.promptInstall()">
             <v-list-item-title>安装离线版</v-list-item-title>
           </v-list-item>
-          <v-list-item link v-if="pwa.updateReady" @click="pwaForceUpdate()">
+          <v-list-item link v-if="$pwa.updateReady" @click="$pwa.forceUpdate()">
             <v-list-item-title>应用更新</v-list-item-title>
           </v-list-item>
-          <v-list-item link v-else-if="pwa.ready" @click="pwaCheckUpdate()">
+          <v-list-item link v-else-if="$pwa.ready" @click="checkUpdate()">
             <v-list-item-title>检测更新</v-list-item-title>
           </v-list-item>
           <v-list-item :href="offlineUrl">
@@ -184,7 +184,6 @@
 </template>
 
 <script>
-import PWA from "./plugins/pwa";
 import Corrections from "./assets/corrections.json";
 import { dataVersion, branchList } from "./assets/dataInfo.json";
 import OptimizableList from "./components/OptimizableList.vue";
@@ -241,11 +240,6 @@ export default {
 
   data: () => ({
     loading: true,
-    pwa: {
-      ready: false,
-      installReady: false,
-      updateReady: false,
-    },
     snackbar: {
       visible: false,
       text: "",
@@ -266,8 +260,9 @@ export default {
     enumNames: [],
     enums: {},
     lastDataVersion: "",
+    versionType: "",
     branchName: "",
-    version: "",
+    packageVersion: "",
     offlineUrl: "",
     selectedEnumIndex: 0,
     useOptimizedList: true,
@@ -345,18 +340,10 @@ export default {
   },
 
   methods: {
-    pwaPromptInstall() {
-      this.pwa.installReady = false;
-      PWA.promptInstall();
-    },
-    pwaForceUpdate() {
-      this.pwa.updateReady = false;
-      PWA.forceUpdate();
-    },
-    async pwaCheckUpdate() {
+    async checkUpdate() {
       try {
         this.$toast("正在检测更新");
-        if (await PWA.checkUpdate()) {
+        if (await this.$pwa.checkUpdate()) {
           this.$toast("更新正在安装，稍后将自动应用");
         } else {
           this.$toast("已是最新版本");
@@ -374,8 +361,9 @@ export default {
       this.loading = true;
       try {
         const json = await (await fetch(branchMeta.dataUrl)).json();
-        this.version = json.version;
+        this.versionType = json.versionType;
         this.branchName = json.branchName;
+        this.packageVersion = json.packageVersion;
         this.enums = json.enums;
         if (!restoringState && this.enumNames.length != json.names.length) {
           this.selectedEnumIndex = 0;
@@ -578,12 +566,6 @@ export default {
   },
 
   mounted: function () {
-    PWA.on("ready", () => (this.pwa.ready = true))
-      .on("updateReady", () => (this.pwa.updateReady = true))
-      .on("installReady", () => (this.pwa.installReady = true));
-    this.pwa.ready = PWA.workerState == "ready";
-    this.pwa.installReady = PWA.installPrompt != null;
-    this.pwa.updateReady = PWA.updatedWorker != null;
     mapLocalStorage(this, "caidlist", [
       "lastDataVersion",
       "useOptimizedList",
