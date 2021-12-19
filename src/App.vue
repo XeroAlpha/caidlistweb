@@ -2,7 +2,7 @@
   <v-app>
     <v-app-bar app outlined flat>
       <v-text-field
-        id="search_box"
+        id="search-box"
         outlined
         flat
         dense
@@ -13,6 +13,7 @@
         v-model="searchText"
         label="搜索"
         :placeholder="searchBoxPlaceholder"
+        class="search-box"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
       ></v-text-field>
@@ -23,8 +24,7 @@
             dense
             :loading="loading"
             height="40px"
-            class="ml-3"
-            style="padding-right: 8px"
+            class="main-menu-activator ml-3 pr-2"
             v-bind="attrs"
             v-on="on"
           >
@@ -32,11 +32,12 @@
             <v-icon class="ml-2">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
-        <v-list class="overflow-y-auto" max-height="90vh">
+        <v-list class="main-menu overflow-y-auto" max-height="90vh">
           <v-list-item-group
             v-model="selectedEnumIndex"
             mandatory
             color="primary"
+            class="enum-select"
           >
             <v-list-item
               v-for="(enumMeta, i) in enumMetaList"
@@ -47,45 +48,74 @@
             </v-list-item>
           </v-list-item-group>
           <v-divider></v-divider>
-          <v-list-item link @click="branchMenu.visible = true">
+          <v-list-item
+            link
+            class="branch-menu-activator"
+            @click="branchMenu.visible = true"
+          >
             <v-list-item-title>分支：{{ branchName }}</v-list-item-title>
           </v-list-item>
           <v-list-item link>
             <v-list-item-title>版本：{{ packageVersion }}</v-list-item-title>
           </v-list-item>
-          <v-list-item link @click="useOptimizedList = !useOptimizedList">
+          <v-list-item
+            link
+            class="use-optimized-list"
+            @click="useOptimizedList = !useOptimizedList"
+          >
             <v-list-item-title>
               性能优化：{{ useOptimizedList ? "开启" : "关闭" }}
             </v-list-item-title>
           </v-list-item>
-          <v-list-item link @click="darkMode = !darkMode">
+          <v-list-item link class="dark-mode" @click="darkMode = !darkMode">
             <v-list-item-title>
               深色模式：{{ darkMode ? "开启" : "关闭" }}
             </v-list-item-title>
           </v-list-item>
-          <v-list-item link v-if="$pwa.installReady" @click="$pwa.promptInstall()">
+          <v-list-item
+            link
+            class="install-pwa"
+            v-if="$pwa.installReady"
+            @click="$pwa.promptInstall()"
+          >
             <v-list-item-title>安装离线版</v-list-item-title>
           </v-list-item>
-          <v-list-item link v-if="$pwa.updateReady" @click="$pwa.forceUpdate()">
+          <v-list-item
+            link
+            class="apply-update"
+            v-if="$pwa.updateReady"
+            @click="$pwa.forceUpdate()"
+          >
             <v-list-item-title>应用更新</v-list-item-title>
           </v-list-item>
-          <v-list-item link v-else-if="$pwa.ready" @click="checkUpdate()">
+          <v-list-item
+            link
+            class="check-update"
+            v-else-if="$pwa.ready"
+            @click="checkUpdate()"
+          >
             <v-list-item-title>检测更新</v-list-item-title>
           </v-list-item>
-          <v-list-item :href="offlineUrl">
+          <v-list-item class="offline-pack" :href="offlineUrl">
             <v-list-item-title>下载压缩包</v-list-item-title>
           </v-list-item>
           <v-divider></v-divider>
-          <v-list-item href="https://jq.qq.com/?_wv=1027&k=RcLgagPy">
+          <v-list-item
+            class="feedback-page"
+            href="https://jq.qq.com/?_wv=1027&k=RcLgagPy"
+          >
             <v-list-item-title>问题反馈</v-list-item-title>
           </v-list-item>
-          <v-list-item href="https://gitee.com/projectxero/idlistweb">
+          <v-list-item
+            class="about-page"
+            href="https://gitee.com/projectxero/idlistweb"
+          >
             <v-list-item-title>关于 MCBEID表</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
       <v-dialog v-model="branchMenu.visible" max-width="500px">
-        <v-list class="overflow-y-auto" max-height="90vh">
+        <v-list class="branch-menu overflow-y-auto" max-height="90vh">
           <v-list-item
             v-for="(branchMeta, i) in branchMenu.list"
             :key="i"
@@ -112,7 +142,7 @@
       ></v-progress-linear>
     </v-app-bar>
     <v-main>
-      <v-list v-show="!searchText && isGlobalSearching">
+      <v-list v-show="!searchText && isGlobalSearching" class="welcome-list">
         <v-list-item>
           <v-list-item-content>
             <button-alert button button-text="使用方法" @click="howToUse()">
@@ -138,7 +168,7 @@
           :button="searchCorrection"
           button-text="更正"
           @click="searchText = searchCorrection"
-          class="ma-3"
+          class="search-correction ma-3"
         >
           {{ searchResultEmptyPrompt }}
         </button-alert>
@@ -148,6 +178,7 @@
         :height="windowHeight - 65"
         :optimized="useOptimizedList"
         item-height="62px"
+        class="search-result"
         v-show="!searchResultEmpty"
         v-resize="onWindowSizeChanged"
       >
@@ -392,7 +423,7 @@ export default {
       this.idDetailDialog.value = kv.value;
     },
     focusSearchBox() {
-      document.querySelector("#search_box").focus();
+      document.querySelector("#search-box").focus();
     },
     computeSearchResult() {
       if (this.loading) return;
