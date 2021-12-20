@@ -39,79 +39,107 @@
             color="primary"
             class="enum-select"
           >
-            <v-list-item
+            <tooltip-menu-list-item
+              left
               v-for="(enumMeta, i) in enumMetaList"
               :key="i"
+              :tooltip="enumMeta.description"
               @click="focusSearchBox()"
             >
               <v-list-item-title>{{ enumMeta.name }}</v-list-item-title>
-            </v-list-item>
+            </tooltip-menu-list-item>
           </v-list-item-group>
           <v-divider></v-divider>
-          <v-list-item
-            link
+          <tooltip-menu-list-item
+            left
+            tooltip="分支是在同一版本不同条件下提取的条目"
             class="branch-menu-activator"
             @click="branchMenu.visible = true"
           >
             <v-list-item-title>分支：{{ branchName }}</v-list-item-title>
-          </v-list-item>
-          <v-list-item link>
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="版本是提取条目时游戏的版本"
+            class="version-menu-activator"
+          >
             <v-list-item-title>版本：{{ packageVersion }}</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="启用后只会加载显示在屏幕上的条目，可能影响某些设备上的显示效果"
             class="use-optimized-list"
             @click="useOptimizedList = !useOptimizedList"
           >
             <v-list-item-title>
               性能优化：{{ useOptimizedList ? "开启" : "关闭" }}
             </v-list-item-title>
-          </v-list-item>
-          <v-list-item link class="dark-mode" @click="darkMode = !darkMode">
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="启用后将全局主题更改为暗色主题"
+            class="dark-mode"
+            @click="darkMode = !darkMode"
+          >
             <v-list-item-title>
               深色模式：{{ darkMode ? "开启" : "关闭" }}
             </v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="以应用形式安装便于快速打开与离线使用"
             class="install-pwa"
             v-if="$pwa.installReady"
             @click="$pwa.promptInstall()"
           >
             <v-list-item-title>安装离线版</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="强制更新离线缓存并刷新页面"
             class="apply-update"
             v-if="$pwa.updateReady"
             @click="$pwa.forceUpdate()"
           >
             <v-list-item-title>应用更新</v-list-item-title>
-          </v-list-item>
-          <v-list-item
-            link
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="检查离线缓存是否有更新版本"
             class="check-update"
             v-else-if="$pwa.ready"
             @click="checkUpdate()"
           >
             <v-list-item-title>检测更新</v-list-item-title>
-          </v-list-item>
-          <v-list-item class="offline-pack" :href="offlineUrl">
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="下载一个包含所有条目文本文件的压缩包"
+            class="offline-pack"
+            :href="offlineUrl"
+            target="_blank"
+          >
             <v-list-item-title>下载压缩包</v-list-item-title>
-          </v-list-item>
+          </tooltip-menu-list-item>
           <v-divider></v-divider>
-          <v-list-item
+          <tooltip-menu-list-item
+            left
+            tooltip="加群【命令助手ID表补全计划】：756038353"
             class="feedback-page"
             href="https://jq.qq.com/?_wv=1027&k=RcLgagPy"
+            target="_blank"
           >
             <v-list-item-title>问题反馈</v-list-item-title>
-          </v-list-item>
-          <v-list-item
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            tooltip="想了解网页的具体细节请点这"
             class="about-page"
             href="https://gitee.com/projectxero/idlistweb"
+            target="_blank"
           >
             <v-list-item-title>关于 MCBEID表</v-list-item-title>
-          </v-list-item>
+          </tooltip-menu-list-item>
         </v-list>
       </v-menu>
       <v-dialog v-model="branchMenu.visible" max-width="500px">
@@ -220,6 +248,7 @@ import { dataVersion, branchList } from "./assets/dataInfo.json";
 import OptimizableList from "./components/OptimizableList.vue";
 import ButtonAlert from "./components/ButtonInfoAlert.vue";
 import IdCopyDialog from "./components/IDCopyDialog.vue";
+import TooltipMenuListItem from "./components/TooltipMenuListItem.vue";
 
 function delayedValue(ms, value) {
   return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -267,7 +296,12 @@ const itemPerFrame = 1,
 export default {
   name: "App",
 
-  components: { OptimizableList, ButtonAlert, IdCopyDialog },
+  components: {
+    OptimizableList,
+    ButtonAlert,
+    IdCopyDialog,
+    TooltipMenuListItem,
+  },
 
   data: () => ({
     loading: true,
