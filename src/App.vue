@@ -258,28 +258,6 @@ function nextAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-function mapLocalStorage(thisObj, namespace, storageKeys) {
-  const prefix = namespace ? namespace + ":" : "";
-  storageKeys.forEach((key) => {
-    const defaultValue = thisObj[key];
-    let reader, writer;
-    if (typeof defaultValue == "number") {
-      reader = (v) => Number(v);
-      writer = (v) => String(v);
-    } else if (typeof defaultValue == "boolean") {
-      reader = (v) => v == "1";
-      writer = (v) => (v ? "1" : "0");
-    } else {
-      reader = (v) => v;
-      writer = (v) => (v ? v : "");
-    }
-    thisObj[key] = reader(localStorage.getItem(prefix + key) ?? defaultValue);
-    thisObj.$watch(key, (newValue) => {
-      localStorage.setItem(prefix + key, writer(newValue));
-    });
-  });
-}
-
 const GlobalEnumMeta = {
   id: "#global",
   name: "全局",
@@ -631,7 +609,7 @@ export default {
   },
 
   mounted: function () {
-    mapLocalStorage(this, "caidlist", [
+    this.$useLocalStorage("caidlist", [
       "lastDataVersion",
       "useOptimizedList",
       "darkMode",
