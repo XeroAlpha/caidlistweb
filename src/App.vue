@@ -11,7 +11,7 @@
         hide-details="auto"
         prepend-icon="mdi-magnify"
         v-model="searchText"
-        label="搜索"
+        :label="$t('searchBox.label')"
         :placeholder="searchBoxPlaceholder"
         class="search-box"
         @focus="searchBoxFocus = true"
@@ -52,93 +52,117 @@
           <v-divider></v-divider>
           <tooltip-menu-list-item
             left
-            tooltip="分支是在同一版本不同条件下提取的条目"
+            :tooltip="$t('mainMenu.branchTooltip')"
             class="branch-menu-activator"
             @click="branchMenu.visible = true"
           >
-            <v-list-item-title>分支：{{ branchName }}</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.branch", [branchName]) }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="版本是提取条目时游戏的版本"
+            :tooltip="$t('mainMenu.versionTooltip')"
             class="version-menu-activator"
           >
-            <v-list-item-title>版本：{{ packageVersion }}</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.version", [packageVersion]) }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="启用后只会加载显示在屏幕上的条目，可能影响某些设备上的显示效果"
+            :tooltip="$t('mainMenu.optimizedListTooltip')"
             class="use-optimized-list"
             @click="useOptimizedList = !useOptimizedList"
           >
             <v-list-item-title>
-              性能优化：{{ useOptimizedList ? "开启" : "关闭" }}
+              {{
+                $t("mainMenu.optimizedList", [
+                  $t(useOptimizedList ? "mainMenu.on" : "mainMenu.off"),
+                ])
+              }}
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="启用后将全局主题更改为暗色主题"
+            :tooltip="$t('mainMenu.darkModeTooltip')"
             class="dark-mode"
             @click="darkMode = !darkMode"
           >
             <v-list-item-title>
-              深色模式：{{ darkMode ? "开启" : "关闭" }}
+              {{
+                $t("mainMenu.darkMode", [
+                  $t(darkMode ? "mainMenu.on" : "mainMenu.off"),
+                ])
+              }}
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="以应用形式安装便于快速打开与离线使用"
+            :tooltip="$t('mainMenu.installPWATooltip')"
             class="install-pwa"
             v-if="$pwa.installReady"
             @click="$pwa.promptInstall()"
           >
-            <v-list-item-title>安装离线版</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.installPWA") }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="强制更新离线缓存并刷新页面"
+            :tooltip="$t('mainMenu.applyUpdateTooltip')"
             class="apply-update"
             v-if="$pwa.updateReady"
             @click="$pwa.forceUpdate()"
           >
-            <v-list-item-title>应用更新</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.applyUpdate") }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="检查离线缓存是否有更新版本"
+            :tooltip="$t('mainMenu.checkUpdateTooltip')"
             class="check-update"
             v-else-if="$pwa.ready"
             @click="checkUpdate()"
           >
-            <v-list-item-title>检测更新</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.checkUpdate") }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="下载一个包含所有条目文本文件的压缩包"
+            :tooltip="$t('mainMenu.offlinePackTooltip')"
             class="offline-pack"
             :href="offlineUrl"
             target="_blank"
           >
-            <v-list-item-title>下载压缩包</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.offlinePack") }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <v-divider></v-divider>
           <tooltip-menu-list-item
             left
-            tooltip="加群【命令助手ID表补全计划】：756038353"
+            :tooltip="$t('mainMenu.feedbackTooltip')"
             class="feedback-page"
-            href="https://jq.qq.com/?_wv=1027&k=RcLgagPy"
+            :href="$t('mainMenu.feedbackLink')"
             target="_blank"
           >
-            <v-list-item-title>问题反馈</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.feedback") }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            tooltip="想了解网页的具体细节请点这"
+            :tooltip="$t('mainMenu.aboutTooltip')"
             class="about-page"
-            href="https://gitee.com/projectxero/idlistweb"
+            :href="$t('mainMenu.aboutLink')"
             target="_blank"
           >
-            <v-list-item-title>关于 MCBEID表</v-list-item-title>
+            <v-list-item-title>
+              {{ $t("mainMenu.about") }}
+            </v-list-item-title>
           </tooltip-menu-list-item>
         </v-list>
       </v-menu>
@@ -164,7 +188,7 @@
       <v-progress-linear
         :active="!computingState.finished"
         :value="computingState.progress"
-        aria-label="加载进度"
+        :aria-label="$t('loadProgressBar')"
         absolute
         bottom
       ></v-progress-linear>
@@ -173,8 +197,12 @@
       <v-list v-show="!searchText && isGlobalSearching" class="welcome-list">
         <v-list-item>
           <v-list-item-content>
-            <button-alert button button-text="使用方法" @click="howToUse()">
-              欢迎使用MCBEID表！
+            <button-alert
+              button
+              :button-text="$t('welcomeList.guide')"
+              @click="howToUse()"
+            >
+              {{ $t("welcomeList.text") }}
             </button-alert>
           </v-list-item-content>
         </v-list-item>
@@ -194,7 +222,7 @@
       <div v-show="searchResultEmpty && searchText">
         <button-alert
           :button="searchCorrection"
-          button-text="更正"
+          :button-text="$t('searchCorrection.action')"
           @click="searchText = searchCorrection"
           class="search-correction ma-3"
         >
@@ -258,12 +286,6 @@ function nextAnimationFrame() {
   return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-const GlobalEnumMeta = {
-  id: "#global",
-  name: "全局",
-  description: "搜索全部条目",
-};
-
 // Performance Threshold
 const itemPerFrame = 1,
   elementPerFrame = 50,
@@ -325,9 +347,16 @@ export default {
   }),
 
   computed: {
+    globalEnumMeta() {
+      return {
+        id: "#global",
+        name: this.$t("globalSearch.name"),
+        description: this.$t("globalSearch.description"),
+      };
+    },
     enumMetaList() {
       return [
-        GlobalEnumMeta,
+        this.globalEnumMeta,
         ...this.enumNames.map((e) => ({
           id: e[0],
           name: e[1],
@@ -336,10 +365,10 @@ export default {
       ];
     },
     selectedEnumMeta() {
-      return this.enumMetaList[this.selectedEnumIndex] || GlobalEnumMeta;
+      return this.enumMetaList[this.selectedEnumIndex] || this.globalEnumMeta;
     },
     isGlobalSearching() {
-      return this.selectedEnumMeta.id == GlobalEnumMeta.id;
+      return this.selectedEnumMeta === this.globalEnumMeta;
     },
     selectedEnum() {
       if (this.isGlobalSearching) {
@@ -350,23 +379,21 @@ export default {
     },
     searchBoxPlaceholder() {
       if (this.isGlobalSearching) {
-        return GlobalEnumMeta.description;
+        return this.$t("searchBox.placeholderGlobal");
       } else {
-        return "在 " + this.searchEnumLength + " 个条目中搜索";
+        return this.$t("searchBox.placeholder", [
+          this.$tc("searchBox.placeholderEntryCount", this.searchEnumLength),
+        ]);
       }
     },
     searchResultEmptyPrompt() {
       if (this.searchCorrection) {
-        return (
-          "未找到与“" +
-          this.searchText +
-          "”相关的条目，" +
-          "您要找的是不是“" +
-          this.searchCorrection +
-          "”？"
-        );
+        return this.$t("searchCorrection.text", [
+          this.searchText,
+          this.searchCorrection,
+        ]);
       } else {
-        return "未找到与“" + this.searchText + "”相关的条目";
+        return this.$t("searchCorrection.noCorrection", [this.searchText]);
       }
     },
   },
@@ -385,14 +412,14 @@ export default {
   methods: {
     async checkUpdate() {
       try {
-        this.$toast("正在检测更新");
+        this.$toastT("checkUpdate.checking");
         if (await this.$pwa.checkUpdate()) {
-          this.$toast("更新正在安装，稍后将自动应用");
+          this.$toastT("checkUpdate.installing");
         } else {
-          this.$toast("已是最新版本");
+          this.$toastT("checkUpdate.upToDate");
         }
       } catch (err) {
-        this.$toast("获取更新失败：" + err);
+        this.$toastT("failed", [err]);
       }
     },
     onWindowSizeChanged() {
@@ -416,7 +443,7 @@ export default {
         this.computeSearchResult();
         return true;
       } catch (err) {
-        this.$toast("获取数据失败：" + err);
+        this.$toastT("branch.loadFailed", [err]);
       }
       return false;
     },
@@ -425,7 +452,7 @@ export default {
       this.branchIndex = index;
       this.loadCurrentBranch().then((success) => {
         if (success) {
-          this.$toast("切换至分支：" + this.branchName);
+          this.$toastT("branch.switchTo", [this.branchName]);
         }
       });
     },
@@ -604,7 +631,7 @@ export default {
       this.searchCorrection = null;
     },
     howToUse() {
-      this.$toast("ProjectXero：我正在写使用方法，请各位稍等几日。");
+      window.open(this.$t("welcomeList.guideLink"), "_blank");
     },
   },
 
@@ -620,9 +647,10 @@ export default {
     this.loadCurrentBranch(true);
     if (this.lastDataVersion != dataVersion) {
       if (this.lastDataVersion) {
-        this.$toast(
-          `游戏版本已更新：${this.lastDataVersion} -> ${dataVersion}`
-        );
+        this.$toastT("dataUpdate.gameVersion", [
+          this.lastDataVersion,
+          dataVersion,
+        ]);
       }
       this.lastDataVersion = dataVersion;
     }

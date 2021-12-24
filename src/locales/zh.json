@@ -1,0 +1,74 @@
+{
+    "searchBox": {
+        "label": "搜索",
+        "placeholderGlobal": "搜索全部条目",
+        "placeholder": "在 {0} 中搜索",
+        "placeholderEntryCount": "{count} 个条目"
+    },
+    "mainMenu": {
+        "on": "开启",
+        "off": "关闭",
+        "branch": "分支：{0}",
+        "branchTooltip": "分支是在同一版本不同条件下提取的条目",
+        "version": "版本：{0}",
+        "versionTooltip": "版本是提取条目时游戏的版本",
+        "optimizedList": "性能优化：{0}",
+        "optimizedListTooltip": "启用后只会加载显示在屏幕上的条目，可能影响某些设备上的显示效果",
+        "darkMode": "深色模式：{0}",
+        "darkModeTooltip": "启用后将全局主题更改为暗色主题",
+        "installPWA": "安装离线版",
+        "installPWATooltip": "以应用形式安装便于快速打开与离线使用",
+        "applyUpdate": "应用更新",
+        "applyUpdateTooltip": "强制更新离线缓存并刷新页面",
+        "checkUpdate": "检测更新",
+        "checkUpdateTooltip": "检查离线缓存是否有更新版本",
+        "offlinePack": "下载压缩包",
+        "offlinePackTooltip": "下载一个包含所有条目文本文件的压缩包",
+        "feedback": "问题反馈",
+        "feedbackLink": "https://jq.qq.com/?_wv=1027&k=RcLgagPy",
+        "feedbackTooltip": "加群【命令助手ID表补全计划】：756038353",
+        "about": "关于 MCBEID表",
+        "aboutLink": "https://gitee.com/projectxero/idlistweb",
+        "aboutTooltip": "想了解网页的具体细节请点这"
+    },
+    "loadProgressBar": "加载进度",
+    "welcomeList": {
+        "text": "欢迎使用MCBEID表！",
+        "guide": "使用方法",
+        "guideLink": "https://www.bilibili.com/video/BV1dq4y127ZB/"
+    },
+    "searchCorrection": {
+        "text": "未找到与“{0}”相关的条目，您要找的是不是“{1}”？",
+        "noCorrection": "未找到与“{0}”相关的条目",
+        "action": "更正"
+    },
+    "globalSearch": {
+        "name": "全局",
+        "description": "搜索全部条目"
+    },
+    "idCopyDialog": {
+        "copyId": "复制ID",
+        "copyDescription": "复制描述",
+        "close": "关闭"
+    },
+    "toast": {
+        "close": "关闭",
+        "checkUpdate": {
+            "checking": "正在检测更新",
+            "installing": "更新正在安装，稍后将自动应用",
+            "upToDate": "已是最新版本",
+            "failed": "获取更新失败：{0}"
+        },
+        "dataUpdate": {
+            "gameVersion": "游戏版本已更新：{0} -> {1}"
+        },
+        "branch": {
+            "loadFailed": "获取数据失败：{0}",
+            "switchTo": "切换至分支：{0}"
+        },
+        "idCopyDialog": {
+            "copySuccess": "复制“{0}”成功",
+            "copyFailed": "复制失败，请尝试在其他浏览器打开并复制"
+        }
+    }
+}

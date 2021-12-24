@@ -35,7 +35,7 @@ const SnackBarComponent = {
                                     }
                                 }
                             },
-                            ["关闭"]
+                            [this.$t("toast.close")]
                         );
                     }
                 }
@@ -67,4 +67,8 @@ export default function (Vue) {
             snackBarComponent.timeout = timeout || 5000;
         });
     };
+
+    Vue.prototype.$toastT = function (key, values) {
+        return this.$toast(this.$t("toast." + key, values));
+    }
 }

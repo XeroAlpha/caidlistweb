@@ -19,7 +19,7 @@
           class="copy-id"
           @click="copyTextAndCloseDetailDialog(idKey)"
         >
-          复制ID
+          {{ $t("idCopyDialog.copyId") }}
         </v-btn>
         <v-btn
           text
@@ -27,7 +27,7 @@
           class="copy-value"
           @click="copyTextAndCloseDetailDialog(idValue)"
         >
-          复制描述
+          {{ $t("idCopyDialog.copyDescription") }}
         </v-btn>
         <v-spacer></v-spacer>
         <v-btn
@@ -36,7 +36,7 @@
           class="close"
           @click="copyTextAndCloseDetailDialog()"
         >
-          关闭
+          {{ $t("idCopyDialog.close") }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -60,9 +60,9 @@ export default {
     async copyText(text) {
       try {
         await navigator.clipboard.writeText(text);
-        this.$toast(`复制“${text}”成功`);
+        this.$toastT("idCopyDialog.copySuccess", [text]);
       } catch (err) {
-        this.$toast(`复制失败，请尝试在其他浏览器打开并复制`);
+        this.$toastT("idCopyDialog.copyFailed");
       }
     },
     copyTextAndCloseDetailDialog(text) {
