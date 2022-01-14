@@ -23,5 +23,6 @@ function loadLocaleMessages() {
 export default new VueI18n({
     locale: "zh",
     fallbackLocale: "zh",
+    silentTranslationWarn: true,
     messages: loadLocaleMessages()
 });

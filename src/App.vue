@@ -22,51 +22,53 @@
           <v-btn
             outlined
             dense
-            :loading="loading"
+            :loading="!engine.ready"
             height="40px"
             class="main-menu-activator ml-3 pr-2"
             v-bind="attrs"
             v-on="on"
           >
-            {{ selectedEnumMeta.name }}
+            {{ $t(activeEnumInfo.name) }}
             <v-icon class="ml-2">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
         <v-list class="main-menu overflow-y-auto" max-height="90vh">
           <v-list-item-group
-            v-model="selectedEnumIndex"
+            v-model="enumId"
             mandatory
             color="primary"
             class="enum-select"
           >
             <tooltip-menu-list-item
               left
-              v-for="(enumMeta, i) in enumMetaList"
+              v-for="(enumInfo, i) in engine.enumList"
               :key="i"
-              :tooltip="enumMeta.description"
+              :tooltip="$t(enumInfo.description)"
+              :value="enumInfo.id"
               @click="focusSearchBox()"
             >
-              <v-list-item-title>{{ enumMeta.name }}</v-list-item-title>
+              <v-list-item-title>{{ $t(enumInfo.name) }}</v-list-item-title>
             </tooltip-menu-list-item>
           </v-list-item-group>
           <v-divider></v-divider>
           <tooltip-menu-list-item
             left
-            :tooltip="$t('mainMenu.branchTooltip')"
-            class="branch-menu-activator"
-            @click="branchMenu.visible = true"
+            :tooltip="$t('mainMenu.versionTooltip')"
+            class="version-menu-activator"
+            @click="openBranchMenuAndOpenGroup('version')"
           >
             <v-list-item-title>
-              {{ $t("mainMenu.branch", [branchName]) }}
+              {{ $t("mainMenu.version", [engine.dataVersion]) }}
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            :tooltip="$t('mainMenu.versionTooltip')"
-            class="version-menu-activator"
+            :tooltip="$t('mainMenu.branchTooltip')"
+            class="branch-menu-activator"
+            @click="openBranchMenuAndOpenGroup('branch')"
           >
             <v-list-item-title>
-              {{ $t("mainMenu.version", [packageVersion]) }}
+              {{ $t("mainMenu.branch", [engine.branchName]) }}
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
@@ -134,7 +136,7 @@
             left
             :tooltip="$t('mainMenu.offlinePackTooltip')"
             class="offline-pack"
-            :href="offlineUrl"
+            :href="engine.offlineUrl"
             target="_blank"
           >
             <v-list-item-title>
@@ -168,33 +170,91 @@
       </v-menu>
       <v-dialog v-model="branchMenu.visible" max-width="500px">
         <v-list class="branch-menu overflow-y-auto" max-height="90vh">
+          <v-list-group class="version-group" v-model="branchMenu.versionGroup">
+            <template v-slot:activator>
+              <v-list-item-content>
+                <v-list-item-title>
+                  {{
+                    $t("branchMenu.currentVersion", [
+                      $t("branchMenu.versionTemplate", [
+                        activeVersionInfo.name,
+                        activeVersionInfo.dataVersion,
+                      ]),
+                    ])
+                  }}
+                </v-list-item-title>
+              </v-list-item-content>
+            </template>
+            <v-list-item
+              v-for="(versionInfo, i) in searchIndexes"
+              :key="i"
+              @click="versionType = versionInfo.id"
+            >
+              <v-list-item-content>
+                <v-list-item-title>
+                  {{
+                    $t("branchMenu.versionTemplate", [
+                      versionInfo.name,
+                      versionInfo.dataVersion,
+                    ])
+                  }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ versionInfo.description }}
+                </v-list-item-subtitle>
+              </v-list-item-content>
+              <v-icon v-if="activeVersionInfo == versionInfo">mdi-check</v-icon>
+            </v-list-item>
+          </v-list-group>
+          <v-divider></v-divider>
+          <v-list-group class="branch-group" v-model="branchMenu.branchGroup">
+            <template v-slot:activator>
+              <v-list-item-content>
+                <v-list-item-title>
+                  {{ $t("branchMenu.currentBranch", [activeBranchInfo.name]) }}
+                </v-list-item-title>
+              </v-list-item-content>
+            </template>
+            <v-list-item
+              v-for="(branchInfo, i) in availableBranches"
+              :key="i"
+              @click="branchId = branchInfo.id"
+            >
+              <v-list-item-content>
+                <v-list-item-title>
+                  {{ branchInfo.name }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ branchInfo.description }}
+                </v-list-item-subtitle>
+              </v-list-item-content>
+              <v-icon v-if="activeBranchInfo == branchInfo">mdi-check</v-icon>
+            </v-list-item>
+          </v-list-group>
+          <v-divider></v-divider>
           <v-list-item
-            v-for="(branchMeta, i) in branchMenu.list"
-            :key="i"
-            @click="closeBranchMenuAndLoadBranch(i)"
+            class="save-branch"
+            link
+            @click="branchMenu.visible = false"
           >
             <v-list-item-content>
               <v-list-item-title>
-                {{ branchMeta.name }}
+                {{ $t("branchMenu.save") }}
               </v-list-item-title>
-              <v-list-item-subtitle>
-                {{ branchMeta.description }}
-              </v-list-item-subtitle>
             </v-list-item-content>
-            <v-icon v-if="branchIndex == i">mdi-check</v-icon>
           </v-list-item>
         </v-list>
       </v-dialog>
       <v-progress-linear
-        :active="!computingState.finished"
-        :value="computingState.progress"
+        :active="!session.idle"
+        :value="session.progress"
         :aria-label="$t('loadProgressBar')"
         absolute
         bottom
       ></v-progress-linear>
     </v-app-bar>
     <v-main>
-      <v-list v-show="!searchText && isGlobalSearching" class="welcome-list">
+      <v-list v-show="!searchText && session.globalSearch" class="welcome-list">
         <v-list-item>
           <v-list-item-content>
             <button-alert
@@ -207,35 +267,37 @@
           </v-list-item-content>
         </v-list-item>
         <v-list-item
-          v-for="(enumMeta, i) in enumMetaList"
+          v-for="(enumInfo, i) in engine.enumList"
           :key="i"
-          @click="(selectedEnumIndex = i), focusSearchBox()"
+          @click="(enumId = enumInfo.id), focusSearchBox()"
         >
           <v-list-item-content>
-            <v-list-item-title>{{ enumMeta.name }}</v-list-item-title>
-            <v-list-item-subtitle>{{
-              enumMeta.description
-            }}</v-list-item-subtitle>
+            <v-list-item-title>
+              {{ $t(enumInfo.name) }}
+            </v-list-item-title>
+            <v-list-item-subtitle>
+              {{ $t(enumInfo.description) }}
+            </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
       </v-list>
-      <div v-show="searchResultEmpty && searchText">
+      <div v-show="session.showNotFound && searchText">
         <button-alert
-          :button="searchCorrection"
+          :button="!!session.correction"
           :button-text="$t('searchCorrection.action')"
-          @click="searchText = searchCorrection"
+          @click="searchText = session.correction"
           class="search-correction ma-3"
         >
           {{ searchResultEmptyPrompt }}
         </button-alert>
       </div>
       <optimizable-list
-        :items="searchResult"
+        :items="session.results"
         :height="windowHeight - 65"
         :optimized="useOptimizedList"
         item-height="62px"
         class="search-result"
-        v-show="!searchResultEmpty"
+        v-show="!session.showNotFound"
         v-resize="onWindowSizeChanged"
       >
         <template v-slot:default="{ item }">
@@ -271,27 +333,11 @@
 </template>
 
 <script>
-import Corrections from "./assets/corrections.json";
-import { dataVersion, branchList } from "./assets/dataInfo.json";
+import SearchEngine from "./core/SearchEngine.js";
 import OptimizableList from "./components/OptimizableList.vue";
 import ButtonAlert from "./components/ButtonInfoAlert.vue";
 import IdCopyDialog from "./components/IDCopyDialog.vue";
 import TooltipMenuListItem from "./components/TooltipMenuListItem.vue";
-
-function delayedValue(ms, value) {
-  return new Promise((resolve) => setTimeout(resolve, ms, value));
-}
-
-function nextAnimationFrame() {
-  return new Promise((resolve) => requestAnimationFrame(resolve));
-}
-
-// Performance Threshold
-const itemPerFrame = 1,
-  elementPerFrame = 50,
-  updateCountPerFrame = 100,
-  searchCountPerFrame = 300,
-  globalSearchThreshold = 100;
 
 export default {
   name: "App",
@@ -304,7 +350,6 @@ export default {
   },
 
   data: () => ({
-    loading: true,
     snackbar: {
       visible: false,
       text: "",
@@ -312,7 +357,10 @@ export default {
     },
     branchMenu: {
       visible: false,
-      list: branchList,
+      versionGroup: false,
+      branchGroup: true,
+      lastVersionType: "",
+      lastBranchId: "",
     },
     idDetailDialog: {
       visible: false,
@@ -321,76 +369,51 @@ export default {
     },
     windowHeight: 0,
     darkMode: false,
-    branchIndex: 0,
-    enumNames: [],
-    enums: {},
-    lastDataVersion: "",
+    lastDataVersion: {},
     versionType: "",
-    branchName: "",
-    packageVersion: "",
-    offlineUrl: "",
-    selectedEnumIndex: 0,
+    branchId: "",
+    enumId: SearchEngine.globalSearchEnumId,
     useOptimizedList: true,
     searchBoxFocus: false,
-    searchText: null,
-    computingState: {
-      finished: true,
-      progress: 0,
-      restartCompute: false,
-      updateCount: 0,
-      searchCount: 0,
-    },
-    searchEnumLength: 0,
-    searchResult: [],
-    searchResultEmpty: false,
-    searchCorrection: null,
+    searchText: "",
   }),
 
   computed: {
-    globalEnumMeta() {
-      return {
-        id: "#global",
-        name: this.$t("globalSearch.name"),
-        description: this.$t("globalSearch.description"),
-      };
+    activeVersionInfo() {
+      return (
+        this.searchIndexes.find((e) => e.id == this.versionType) ||
+        this.searchIndexes[0]
+      );
     },
-    enumMetaList() {
-      return [
-        this.globalEnumMeta,
-        ...this.enumNames.map((e) => ({
-          id: e[0],
-          name: e[1],
-          description: e[2],
-        })),
-      ];
+    availableBranches() {
+      return this.activeVersionInfo.branchList;
     },
-    selectedEnumMeta() {
-      return this.enumMetaList[this.selectedEnumIndex] || this.globalEnumMeta;
+    activeBranchInfo() {
+      return (
+        this.availableBranches.find((e) => e.id == this.branchId) ||
+        this.availableBranches[0]
+      );
     },
-    isGlobalSearching() {
-      return this.selectedEnumMeta === this.globalEnumMeta;
-    },
-    selectedEnum() {
-      if (this.isGlobalSearching) {
-        return null;
-      } else {
-        return this.enums[this.selectedEnumMeta.id];
-      }
+    activeEnumInfo() {
+      return (
+        this.engine.enumList.find((e) => e.id == this.enumId) ||
+        this.engine.enumList[0]
+      );
     },
     searchBoxPlaceholder() {
-      if (this.isGlobalSearching) {
+      if (this.session.globalSearch) {
         return this.$t("searchBox.placeholderGlobal");
       } else {
         return this.$t("searchBox.placeholder", [
-          this.$tc("searchBox.placeholderEntryCount", this.searchEnumLength),
+          this.$tc("searchBox.placeholderEntryCount", this.session.enumSize),
         ]);
       }
     },
     searchResultEmptyPrompt() {
-      if (this.searchCorrection) {
+      if (this.session.correction) {
         return this.$t("searchCorrection.text", [
           this.searchText,
-          this.searchCorrection,
+          this.session.correction,
         ]);
       } else {
         return this.$t("searchCorrection.noCorrection", [this.searchText]);
@@ -399,8 +422,21 @@ export default {
   },
 
   watch: {
-    searchText: "computeSearchResult",
-    selectedEnumIndex: "computeSearchResult",
+    "branchMenu.visible": function (newValue, oldValue) {
+      if (newValue && !oldValue) {
+        this.branchMenu.lastVersionType = this.versionType;
+        this.branchMenu.lastBranchId = this.branchId;
+      } else if (!newValue && oldValue) {
+        if (
+          this.branchMenu.lastVersionType != this.versionType ||
+          this.branchMenu.lastBranchId != this.branchId
+        ) {
+          this.loadCurrentBranch("switchBranch");
+        }
+      }
+    },
+    searchText: "updateSearchSession",
+    enumId: "updateSearchSession",
     darkMode: {
       handler(newValue) {
         this.$vuetify.theme.dark = newValue;
@@ -419,42 +455,70 @@ export default {
           this.$toastT("checkUpdate.upToDate");
         }
       } catch (err) {
-        this.$toastT("failed", [err]);
+        console.warn(err);
+        this.$toastT("checkUpdate.failed", [err]);
       }
     },
     onWindowSizeChanged() {
       this.windowHeight = window.innerHeight;
     },
-    async loadCurrentBranch(restoringState) {
-      const branchMeta = branchList[this.branchIndex] || branchList[0];
-      this.offlineUrl = branchMeta.offlineUrl;
-      this.loading = true;
+    async loadCurrentBranch(scene) {
       try {
-        const json = await (await fetch(branchMeta.dataUrl)).json();
-        this.versionType = json.versionType;
-        this.branchName = json.branchName;
-        this.packageVersion = json.packageVersion;
-        this.enums = json.enums;
-        if (!restoringState && this.enumNames.length != json.names.length) {
-          this.selectedEnumIndex = 0;
+        await SearchEngine.loadBranch(this.versionType, this.branchId);
+        if (!(this.enumId in this.engine.enumList)) {
+          this.enumId = SearchEngine.globalSearchEnumId;
         }
-        this.enumNames = json.names;
-        this.loading = false;
-        this.computeSearchResult();
-        return true;
+        this.updateSearchSession();
+        if (scene == "switchBranch") {
+          this.$toastT("branch.switchTo", [
+            this.engine.versionName,
+            this.engine.branchName,
+          ]);
+        }
       } catch (err) {
+        console.warn(err);
         this.$toastT("branch.loadFailed", [err]);
       }
-      return false;
     },
-    closeBranchMenuAndLoadBranch(index) {
-      this.branchMenu.visible = false;
-      this.branchIndex = index;
-      this.loadCurrentBranch().then((success) => {
-        if (success) {
-          this.$toastT("branch.switchTo", [this.branchName]);
+    notifyGameVersionUpdate() {
+      const updatedVersions = [];
+      this.searchIndexes.forEach((versionInfo) => {
+        const lastDataVersion = this.lastDataVersion[versionInfo.id];
+        const dataVersion = versionInfo.dataVersion;
+        if (lastDataVersion != dataVersion) {
+          if (lastDataVersion) {
+            updatedVersions.push([
+              versionInfo.versionName,
+              lastDataVersion,
+              dataVersion,
+            ]);
+          }
+          this.$set(this.lastDataVersion, versionInfo.id, dataVersion);
         }
       });
+      if (updatedVersions.length) {
+        this.$toastT("dataUpdate.gameVersion", [
+          updatedVersions.map((e) =>
+            this.$t("toast.dataUpdate.gameVersionEntry", e)
+          ),
+        ]);
+      }
+    },
+    updateSearchSession() {
+      SearchEngine.updateSession(this.session, {
+        enumId: this.enumId,
+        text: this.searchText || "",
+      });
+    },
+    openBranchMenuAndOpenGroup(group) {
+      this.branchMenu.visible = true;
+      if (group == "version") {
+        this.branchMenu.versionGroup = true;
+        this.branchMenu.branchGroup = false;
+      } else {
+        this.branchMenu.versionGroup = false;
+        this.branchMenu.branchGroup = true;
+      }
     },
     showIDDetail(kv) {
       this.idDetailDialog.visible = true;
@@ -464,196 +528,44 @@ export default {
     focusSearchBox() {
       document.querySelector("#search-box").focus();
     },
-    computeSearchResult() {
-      if (this.loading) return;
-      if (!this.computingState.finished) {
-        this.computingState.restartCompute = true;
-      } else {
-        this.computeSearchCorrection();
-        this.computeSearchResultAsync()
-          .then(() => delayedValue(100))
-          .then(() => {
-            if (this.computingState.restartCompute) {
-              this.computingState.restartCompute = false;
-              this.computeSearchResult();
-            }
-          });
-      }
-    },
-    computeSearchInChunk(chunk, selectedEnum, searchTextLowerCase) {
-      const searchLength = searchTextLowerCase.length;
-      if (searchLength) {
-        chunk = chunk
-          .map((key) => {
-            let value = selectedEnum[key];
-            let indexInKey = key.toLowerCase().indexOf(searchTextLowerCase);
-            let indexInValue = value.toLowerCase().indexOf(searchTextLowerCase);
-            if (indexInKey >= 0 || indexInValue >= 0) {
-              let result = { key, value };
-              if (indexInKey >= 0) {
-                result = {
-                  ...result,
-                  keyHighlight: true,
-                  keyPre: key.slice(0, indexInKey),
-                  keyHl: key.slice(indexInKey, indexInKey + searchLength),
-                  keyPost: key.slice(indexInKey + searchLength),
-                };
-              }
-              if (indexInValue >= 0) {
-                result = {
-                  ...result,
-                  valueHighlight: true,
-                  valuePre: value.slice(0, indexInValue),
-                  valueHl: value.slice(
-                    indexInValue,
-                    indexInValue + searchLength
-                  ),
-                  valuePost: value.slice(indexInValue + searchLength),
-                };
-              }
-              return result;
-            } else {
-              return null;
-            }
-          })
-          .filter((item) => item != null);
-      } else {
-        chunk = chunk.map((key) => {
-          return {
-            key,
-            value: selectedEnum[key],
-          };
-        });
-      }
-      return chunk;
-    },
-    async computeSearchResultForEnum(
-      selectedEnum,
-      searchTextLowerCase,
-      progressOffset
-    ) {
-      let i, keys, chunk;
-      keys = Object.keys(selectedEnum);
-      this.searchEnumLength = keys.length;
-      for (i = 0; i < keys.length; i += itemPerFrame) {
-        chunk = keys.slice(i, i + itemPerFrame);
-        this.computingState.searchCount += chunk.length;
-        chunk = this.computeSearchInChunk(
-          chunk,
-          selectedEnum,
-          searchTextLowerCase
-        );
-        this.computingState.progress =
-          (i / keys.length) * progressOffset[1] + progressOffset[0];
-        while (chunk.length > 0) {
-          this.searchResult.push(...chunk.splice(0, elementPerFrame));
-          this.computingState.updateCounts++;
-          if (
-            (this.searchBoxFocus && !this.useOptimizedList) ||
-            this.computingState.updateCounts > updateCountPerFrame
-          ) {
-            this.computingState.updateCounts = 0;
-            await nextAnimationFrame();
-          }
-        }
-        if (this.computingState.searchCount > searchCountPerFrame) {
-          this.computingState.searchCount = 0;
-          await nextAnimationFrame();
-        }
-        if (this.computingState.restartCompute) {
-          break;
-        }
-      }
-    },
-    async computeSearchResultAsync() {
-      let { searchText } = this;
-      if (!searchText) searchText = "";
-      let searchTextLowerCase = searchText.toLowerCase();
-      this.computingState.finished = false;
-      this.computingState.progress = 0;
-      this.computingState.updateCount = 0;
-      this.computingState.searchCount = 0;
-      this.searchResult.splice(0); // remove all elements
-      if (this.isGlobalSearching) {
-        if (searchText) {
-          let { enumMetaList } = this;
-          let i,
-            progressPerEnum = 100 / enumMetaList.length;
-          for (i = 1; i < enumMetaList.length; i++) {
-            let selectedEnum = this.enums[enumMetaList[i].id];
-            await this.computeSearchResultForEnum(
-              selectedEnum,
-              searchTextLowerCase,
-              [progressPerEnum * i, progressPerEnum]
-            );
-            if (
-              this.computingState.restartCompute ||
-              this.searchResult.length > globalSearchThreshold
-            ) {
-              break;
-            }
-          }
-        }
-      } else {
-        let { selectedEnum } = this;
-        if (!selectedEnum) return;
-        await this.computeSearchResultForEnum(
-          selectedEnum,
-          searchTextLowerCase,
-          [0, 100]
-        );
-      }
-      this.computingState.finished = true;
-      this.computingState.progress = 0;
-      this.searchResultEmpty = this.searchResult.length == 0;
-    },
-    computeSearchCorrection() {
-      let { searchText } = this;
-      let newSearchText = searchText;
-      if (newSearchText) {
-        Corrections.words.forEach((wordCorrection) => {
-          newSearchText = newSearchText.replace(
-            wordCorrection[0],
-            wordCorrection[1]
-          );
-        });
-        Corrections.patterns.forEach((wordCorrection) => {
-          newSearchText = newSearchText.replace(
-            new RegExp(wordCorrection[0], "g"),
-            wordCorrection[1]
-          );
-        });
-        if (newSearchText != searchText) {
-          this.searchCorrection = newSearchText;
-          return;
-        }
-      }
-      this.searchCorrection = null;
-    },
     howToUse() {
       window.open(this.$t("welcomeList.guideLink"), "_blank");
     },
   },
 
+  created: function () {
+    this.SearchEngine = SearchEngine;
+    this.engine = SearchEngine.state;
+    this.searchIndexes = SearchEngine.indexes;
+    this.session = SearchEngine.newSearchSession();
+  },
   mounted: function () {
-    this.$useLocalStorage("caidlist", [
-      "lastDataVersion",
-      "useOptimizedList",
-      "darkMode",
-      "branchIndex",
-      "selectedEnumIndex",
-      "searchText",
-    ]);
-    this.loadCurrentBranch(true);
-    if (this.lastDataVersion != dataVersion) {
-      if (this.lastDataVersion) {
-        this.$toastT("dataUpdate.gameVersion", [
-          this.lastDataVersion,
-          dataVersion,
-        ]);
+    this.$useLocalStorage(
+      "caidlist",
+      [
+        "lastDataVersion",
+        "useOptimizedList",
+        "darkMode",
+        "versionType",
+        "branchId",
+        "enumId",
+        "searchText",
+      ],
+      "20220114",
+      (current, _, storage) => {
+        if (!current && storage.lastDataVersion) {
+          storage.versionType = "beta";
+          storage.branchId = this.availableBranches[storage.branchIndex]?.id;
+          storage.enumId = SearchEngine.globalSearchEnumId;
+          storage.lastDataVersion = { beta: storage.lastDataVersion };
+          delete storage.branchIndex;
+          delete storage.selectedEnumIndex;
+          return "20220114";
+        }
       }
-      this.lastDataVersion = dataVersion;
-    }
+    );
+    this.loadCurrentBranch("start");
+    this.notifyGameVersionUpdate();
   },
 };
 </script>

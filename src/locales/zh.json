@@ -32,6 +32,12 @@
         "aboutTooltip": "想了解网页的具体细节请点这"
     },
     "loadProgressBar": "加载进度",
+    "branchMenu": {
+        "versionTemplate": "{0}（{1}）",
+        "currentVersion": "当前版本：{0}",
+        "currentBranch": "当前分支：{0}",
+        "save": "保存"
+    },
     "welcomeList": {
         "text": "欢迎使用MCBEID表！",
         "guide": "使用方法",
@@ -60,11 +66,12 @@
             "failed": "获取更新失败：{0}"
         },
         "dataUpdate": {
-            "gameVersion": "游戏版本已更新：{0} -> {1}"
+            "gameVersion": "游戏版本已更新：\n{0}",
+            "gameVersionEntry": "{0}：{1} -> {2}"
         },
         "branch": {
             "loadFailed": "获取数据失败：{0}",
-            "switchTo": "切换至分支：{0}"
+            "switchTo": "切换至分支：{0} - {1}"
         },
         "idCopyDialog": {
             "copySuccess": "复制“{0}”成功",
