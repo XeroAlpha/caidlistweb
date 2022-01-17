@@ -40,7 +40,7 @@ const SnackBarComponent = {
                     }
                 }
             },
-            [this.text]
+            this.text.split("\n").map(line => h("div", [line]))
         );
     }
 };

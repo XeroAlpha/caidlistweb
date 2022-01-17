@@ -233,13 +233,13 @@
           </v-list-group>
           <v-divider></v-divider>
           <v-list-item
-            class="save-branch"
+            class="close-branch-menu"
             link
             @click="branchMenu.visible = false"
           >
             <v-list-item-content>
               <v-list-item-title>
-                {{ $t("branchMenu.save") }}
+                {{ $t("branchMenu.close") }}
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
@@ -488,7 +488,7 @@ export default {
         if (lastDataVersion != dataVersion) {
           if (lastDataVersion) {
             updatedVersions.push([
-              versionInfo.versionName,
+              versionInfo.name,
               lastDataVersion,
               dataVersion,
             ]);
@@ -500,7 +500,7 @@ export default {
         this.$toastT("dataUpdate.gameVersion", [
           updatedVersions.map((e) =>
             this.$t("toast.dataUpdate.gameVersionEntry", e)
-          ),
+          ).join(this.$t("toast.dataUpdate.gameVersionEntryJoiner")),
         ]);
       }
     },
@@ -573,5 +573,8 @@ export default {
 <style>
 html {
   overflow-y: auto !important;
+}
+.branch-menu .v-list-item__subtitle {
+  white-space: normal;
 }
 </style>

@@ -36,7 +36,7 @@
         "versionTemplate": "{0}（{1}）",
         "currentVersion": "当前版本：{0}",
         "currentBranch": "当前分支：{0}",
-        "save": "保存"
+        "close": "确定"
     },
     "welcomeList": {
         "text": "欢迎使用MCBEID表！",
@@ -67,7 +67,8 @@
         },
         "dataUpdate": {
             "gameVersion": "游戏版本已更新：\n{0}",
-            "gameVersionEntry": "{0}：{1} -> {2}"
+            "gameVersionEntry": "{0}：{1} -> {2}",
+            "gameVersionEntryJoiner": "\n"
         },
         "branch": {
             "loadFailed": "获取数据失败：{0}",

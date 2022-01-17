@@ -100,7 +100,7 @@ const SearchEngine = {
         if (session.idle) {
             session.idle = false;
             session.currentSearch = newState;
-            (async function () {
+            (async () => {
                 try {
                     await this.doJob(session);
                     await delayedValue(100);
@@ -114,7 +114,7 @@ const SearchEngine = {
                 } finally {
                     session.idle = true;
                 }
-            }).call(this);
+            })();
         } else {
             session.pendingSearch = newState;
         }
@@ -150,10 +150,10 @@ const SearchEngine = {
             if (text.length) {
                 const progressPerEnum = 100 / enumList.length;
                 let i;
-                for (i = 1; i < enumList.length; i++) {
+                for (i = 0; i < enumList.length; i++) {
                     const selectedEnum = enums[enumList[i].id];
                     const enumEntries = Object.entries(selectedEnum);
-                    await this.doSearchEnum(session, enumId, enumEntries, textLowerCase, (subprogress) => {
+                    await this.doSearchEnum(session, enumList[i].id, enumEntries, textLowerCase, (subprogress) => {
                         session.progress = progressPerEnum * (i + subprogress);
                     });
                     if (session.pendingSearch || session.results.length > globalSearchMaxCount) {
