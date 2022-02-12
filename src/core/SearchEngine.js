@@ -59,16 +59,12 @@ const SearchEngine = {
         state.enumList = [gloablSearchEnum, ...this.current.enumList];
         state.ready = true;
     },
-    mapState() {
-        const getters = {};
-        let k;
-        for (k in this.state) {
-            getters[k] = () => this.state[k];
-        }
-        return getters;
+    getEnumInfo(enumId) {
+        return this.state.enumList.find((e) => e.id == enumId) || this.state.enumList[0];
     },
     async loadBranch(versionType, branch) {
         let versionIndex, branchInfo, branchData;
+        this.state.ready = false;
         versionIndex = this.indexes.find((e) => e.id == versionType);
         if (!versionIndex) versionIndex = this.indexes[0];
         branchInfo = versionIndex.branchList.find((e) => e.id == branch);
@@ -240,7 +236,7 @@ const SearchEngine = {
                 .filter((result) => result != null);
         } else {
             chunk = chunk.map(([key, value]) => {
-                return { key, value };
+                return { enumId, key, value };
             });
         }
         return chunk;

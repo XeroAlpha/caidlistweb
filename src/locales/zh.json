@@ -1,4 +1,8 @@
 {
+    "document": {
+        "title": "MCBEID表",
+        "titleWithBranch": "{1} - {0} - MCBEID表"
+    },
     "searchBox": {
         "label": "搜索",
         "placeholderGlobal": "搜索全部条目",
@@ -24,6 +28,9 @@
         "checkUpdateTooltip": "检查离线缓存是否有更新版本",
         "offlinePack": "下载压缩包",
         "offlinePackTooltip": "下载一个包含所有条目文本文件的压缩包",
+        "dataSource": "数据来源",
+        "dataSourceLink": "https://gitee.com/projectxero/caidlist",
+        "dataSourceTooltip": "ID 表的原始数据来源",
         "feedback": "问题反馈",
         "feedbackLink": "https://jq.qq.com/?_wv=1027&k=RcLgagPy",
         "feedbackTooltip": "加群【命令助手ID表补全计划】：756038353",
@@ -55,6 +62,7 @@
     "idCopyDialog": {
         "copyId": "复制ID",
         "copyDescription": "复制描述",
+        "jumpTo": "跳转",
         "close": "关闭"
     },
     "toast": {

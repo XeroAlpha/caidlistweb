@@ -146,6 +146,17 @@
           <v-divider></v-divider>
           <tooltip-menu-list-item
             left
+            :tooltip="$t('mainMenu.dataSourceTooltip')"
+            class="data-source"
+            :href="$t('mainMenu.dataSourceLink')"
+            target="_blank"
+          >
+            <v-list-item-title>
+              {{ $t("mainMenu.dataSource") }}
+            </v-list-item-title>
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
             :tooltip="$t('mainMenu.feedbackTooltip')"
             class="feedback-page"
             :href="$t('mainMenu.feedbackLink')"
@@ -326,8 +337,8 @@
     </v-main>
     <id-copy-dialog
       v-model="idDetailDialog.visible"
-      :idKey="idDetailDialog.key"
-      :idValue="idDetailDialog.value"
+      :entry="idDetailDialog.entry"
+      @jump="jumpToResultEntry()"
     ></id-copy-dialog>
   </v-app>
 </template>
@@ -364,8 +375,11 @@ export default {
     },
     idDetailDialog: {
       visible: false,
-      key: "",
-      value: "",
+      entry: {
+        enumId: "",
+        key: "",
+        value: "",
+      },
     },
     windowHeight: 0,
     darkMode: false,
@@ -395,10 +409,7 @@ export default {
       );
     },
     activeEnumInfo() {
-      return (
-        this.engine.enumList.find((e) => e.id == this.enumId) ||
-        this.engine.enumList[0]
-      );
+      return SearchEngine.getEnumInfo(this.enumId);
     },
     searchBoxPlaceholder() {
       if (this.session.globalSearch) {
@@ -417,6 +428,16 @@ export default {
         ]);
       } else {
         return this.$t("searchCorrection.noCorrection", [this.searchText]);
+      }
+    },
+    title() {
+      if (this.engine.ready) {
+        return this.$t("document.titleWithBranch", [
+          this.engine.versionName,
+          this.engine.branchName,
+        ]);
+      } else {
+        return this.$t("document.title");
       }
     },
   },
@@ -443,6 +464,9 @@ export default {
       },
       immediate: true,
     },
+    title(newValue) {
+      document.title = newValue;
+    },
   },
 
   methods: {
@@ -465,9 +489,7 @@ export default {
     async loadCurrentBranch(scene) {
       try {
         await SearchEngine.loadBranch(this.versionType, this.branchId);
-        if (!(this.enumId in this.engine.enumList)) {
-          this.enumId = SearchEngine.globalSearchEnumId;
-        }
+        this.enumId = SearchEngine.getEnumInfo(this.enumId).id;
         this.updateSearchSession();
         if (scene == "switchBranch") {
           this.$toastT("branch.switchTo", [
@@ -498,9 +520,9 @@ export default {
       });
       if (updatedVersions.length) {
         this.$toastT("dataUpdate.gameVersion", [
-          updatedVersions.map((e) =>
-            this.$t("toast.dataUpdate.gameVersionEntry", e)
-          ).join(this.$t("toast.dataUpdate.gameVersionEntryJoiner")),
+          updatedVersions
+            .map((e) => this.$t("toast.dataUpdate.gameVersionEntry", e))
+            .join(this.$t("toast.dataUpdate.gameVersionEntryJoiner")),
         ]);
       }
     },
@@ -520,10 +542,14 @@ export default {
         this.branchMenu.branchGroup = true;
       }
     },
-    showIDDetail(kv) {
+    showIDDetail(entry) {
       this.idDetailDialog.visible = true;
-      this.idDetailDialog.key = kv.key;
-      this.idDetailDialog.value = kv.value;
+      this.idDetailDialog.entry = { ...entry };
+    },
+    jumpToResultEntry() {
+      const entry = this.idDetailDialog.entry;
+      this.searchText = entry.key;
+      this.enumId = entry.enumId;
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();
@@ -533,7 +559,7 @@ export default {
     },
   },
 
-  created: function () {
+  beforeCreate: function () {
     this.SearchEngine = SearchEngine;
     this.engine = SearchEngine.state;
     this.searchIndexes = SearchEngine.indexes;

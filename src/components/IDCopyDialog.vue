@@ -7,17 +7,17 @@
   >
     <v-card class="id-copy-dialog">
       <v-card-title class="id-key">
-        {{ idKey }}
+        {{ entry.key }}
       </v-card-title>
       <v-card-text class="id-value">
-        {{ idValue }}
+        {{ entry.value }}
       </v-card-text>
       <v-card-actions>
         <v-btn
           text
           color="primary"
           class="copy-id"
-          @click="copyTextAndCloseDetailDialog(idKey)"
+          @click="copyTextAndCloseDialog(entry.key)"
         >
           {{ $t("idCopyDialog.copyId") }}
         </v-btn>
@@ -25,16 +25,24 @@
           text
           color="primary"
           class="copy-value"
-          @click="copyTextAndCloseDetailDialog(idValue)"
+          @click="copyTextAndCloseDialog(entry.value)"
         >
           {{ $t("idCopyDialog.copyDescription") }}
+        </v-btn>
+        <v-btn
+          text
+          color="primary"
+          class="jump-to-enum"
+          @click="jumpToAndCloseDialog()"
+        >
+          {{ $t("idCopyDialog.jumpTo") }}
         </v-btn>
         <v-spacer></v-spacer>
         <v-btn
           text
           color="primary"
           class="close"
-          @click="copyTextAndCloseDetailDialog()"
+          @click="copyTextAndCloseDialog()"
         >
           {{ $t("idCopyDialog.close") }}
         </v-btn>
@@ -52,8 +60,7 @@ export default {
 
   props: {
     visible: Boolean,
-    idKey: String,
-    idValue: String,
+    entry: Object,
   },
 
   methods: {
@@ -65,12 +72,16 @@ export default {
         this.$toastT("idCopyDialog.copyFailed");
       }
     },
-    copyTextAndCloseDetailDialog(text) {
+    copyTextAndCloseDialog(text) {
       this.$emit("visibility-changed", false);
       if (text) {
         this.copyText(text);
       }
     },
+    jumpToAndCloseDialog() {
+      this.$emit("visibility-changed", false);
+      this.$emit("jump");
+    }
   },
 };
 </script>
