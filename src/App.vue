@@ -338,7 +338,8 @@
     <id-copy-dialog
       v-model="idDetailDialog.visible"
       :entry="idDetailDialog.entry"
-      @jump="jumpToResultEntry()"
+      :state="{ enumId, searchText }"
+      @update="updateState($event)"
     ></id-copy-dialog>
   </v-app>
 </template>
@@ -546,10 +547,13 @@ export default {
       this.idDetailDialog.visible = true;
       this.idDetailDialog.entry = { ...entry };
     },
-    jumpToResultEntry() {
-      const entry = this.idDetailDialog.entry;
-      this.searchText = entry.key;
-      this.enumId = entry.enumId;
+    updateState(state) {
+      if (state.searchText != null) {
+        this.searchText = state.searchText;
+      }
+      if (state.enumId != null) {
+        this.enumId = state.enumId;
+      }
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();

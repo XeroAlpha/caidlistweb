@@ -60,10 +60,19 @@
         "description": "搜索全部条目"
     },
     "idCopyDialog": {
-        "copyId": "复制ID",
-        "copyDescription": "复制描述",
+        "title": "条目详情",
+        "entryId": "条目",
+        "entryValue": "描述",
+        "entryEnum": "枚举",
+        "enumWhenGlobal": "{0}（全局搜索）",
         "jumpTo": "跳转",
+        "searchGlobal": "全局搜索",
+        "searchId": "搜索条目",
+        "searchDescription": "搜索描述",
         "close": "关闭"
+    },
+    "copyableTextLabel": {
+        "copy": "复制"
     },
     "toast": {
         "close": "关闭",
@@ -84,7 +93,15 @@
         },
         "idCopyDialog": {
             "copySuccess": "复制“{0}”成功",
-            "copyFailed": "复制失败，请尝试在其他浏览器打开并复制"
+            "copyFailed": "复制失败，请尝试在其他浏览器打开并复制",
+            "jumpTo": "已切换至“{0}”枚举",
+            "searchGlobal": "已切换至全局搜索",
+            "replaceSearch": "已切换为搜索“{0}”"
+        },
+        "copyableTextLabel": {
+            "copySuccess": "内容已复制",
+            "copyFailedInaccessible": "复制失败，请尝试在其他浏览器打开并复制",
+            "copyFailedUnknown": "复制失败，请尝试在其他浏览器打开并复制\n{0}"
         }
     }
 }
