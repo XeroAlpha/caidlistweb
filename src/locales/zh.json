@@ -20,6 +20,11 @@
         "optimizedListTooltip": "启用后只会加载显示在屏幕上的条目，可能影响某些设备上的显示效果",
         "darkMode": "深色模式：{0}",
         "darkModeTooltip": "启用后将全局主题更改为暗色主题",
+        "editorMode": "编辑模式：{0}",
+        "editorModeTooltip": "启用后用户可以自定义每个条目的翻译",
+        "exportModifier": "导出编辑数据",
+        "exportModifierFilename": "编辑数据",
+        "exportModifierTooltip": "导出编辑模式下进行的编辑更改",
         "installPWA": "安装离线版",
         "installPWATooltip": "以应用形式安装便于快速打开与离线使用",
         "applyUpdate": "应用更新",
@@ -69,6 +74,8 @@
         "searchGlobal": "全局搜索",
         "searchId": "搜索条目",
         "searchDescription": "搜索描述",
+        "edit": "编辑",
+        "save": "保存",
         "close": "关闭"
     },
     "copyableTextLabel": {

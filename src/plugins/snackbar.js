@@ -68,7 +68,9 @@ export default function (Vue) {
         });
     };
 
-    Vue.prototype.$toastT = function (key, values) {
-        return this.$toast(this.$t("toast." + key, values));
+    if (Vue.prototype.$t) {
+        Vue.prototype.$toastT = function (key, values) {
+            return this.$toast(this.$t("toast." + key, values));
+        }
     }
 }

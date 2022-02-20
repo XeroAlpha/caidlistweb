@@ -15,7 +15,7 @@ class PWAManager {
     updateFound = false;
     installPrompt = null;
     updatedWorker = null;
-    updateTimeout = 1000;
+    updateTimeout = 2000;
 
     prepare() {
         if (!("serviceWorker" in navigator)) {

@@ -46,7 +46,7 @@ export default {
     },
     touchDown() {
       this.touching = true;
-      this.touchTimeout = setTimeout(() => this.copy(), 1200);
+      this.touchTimeout = setTimeout(() => this.copy(), 1000);
       console.log("touchDown");
     },
     touchUp() {
@@ -78,6 +78,9 @@ export default {
   display: none;
 }
 @media (hover: hover) {
+  .copyable-label .copyable-text {
+    user-select: unset;
+  }
   .copyable-label:hover .copyable-copy {
     display: unset;
   }

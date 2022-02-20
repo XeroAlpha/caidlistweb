@@ -101,6 +101,31 @@
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
+            :tooltip="$t('mainMenu.editorModeTooltip')"
+            class="editor-mode"
+            @click="editorMode = !editorMode"
+          >
+            <v-list-item-title>
+              {{
+                $t("mainMenu.editorMode", [
+                  $t(editorMode ? "mainMenu.on" : "mainMenu.off"),
+                ])
+              }}
+            </v-list-item-title>
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            :tooltip="$t('mainMenu.exportModifierTooltip')"
+            class="export-modifier"
+            v-if="editorMode"
+            @click="exportModifiers()"
+          >
+            <v-list-item-title>
+              {{ $t("mainMenu.exportModifier") }}
+            </v-list-item-title>
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
             :tooltip="$t('mainMenu.installPWATooltip')"
             class="install-pwa"
             v-if="$pwa.installReady"
@@ -337,6 +362,7 @@
     </v-main>
     <id-copy-dialog
       v-model="idDetailDialog.visible"
+      :editable="editorMode && !idDetailDialog.saving"
       :entry="idDetailDialog.entry"
       :state="{ enumId, searchText }"
       @update="updateState($event)"
@@ -376,6 +402,7 @@ export default {
     },
     idDetailDialog: {
       visible: false,
+      saving: false,
       entry: {
         enumId: "",
         key: "",
@@ -384,6 +411,7 @@ export default {
     },
     windowHeight: 0,
     darkMode: false,
+    editorMode: false,
     lastDataVersion: {},
     versionType: "",
     branchId: "",
@@ -545,15 +573,34 @@ export default {
     },
     showIDDetail(entry) {
       this.idDetailDialog.visible = true;
-      this.idDetailDialog.entry = { ...entry };
+      this.idDetailDialog.entry = entry;
     },
-    updateState(state) {
+    async updateState(state) {
       if (state.searchText != null) {
         this.searchText = state.searchText;
       }
       if (state.enumId != null) {
         this.enumId = state.enumId;
       }
+      if (state.entryValue != null) {
+        this.idDetailDialog.saving = true;
+        await SearchEngine.updateEnumEntry(
+          this.enumId,
+          this.idDetailDialog.entry.key,
+          (this.idDetailDialog.entry.value = state.entryValue)
+        );
+        this.idDetailDialog.saving = false;
+      }
+    },
+    async exportModifiers() {
+      const buffer = await SearchEngine.exportModifiers();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(
+        new Blob([buffer.buffer], { type: "application/json" })
+      );
+      a.download = this.$t("mainMenu.exportModifierFilename") + ".json";
+      a.click();
+      URL.revokeObjectURL(a.href);
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();
@@ -576,6 +623,7 @@ export default {
         "lastDataVersion",
         "useOptimizedList",
         "darkMode",
+        "editorMode",
         "versionType",
         "branchId",
         "enumId",

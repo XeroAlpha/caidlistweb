@@ -10,6 +10,45 @@ function nextAnimationFrame() {
     return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
+/**
+ * @template Request
+ * @param {Request} request
+ * @param {(request: Request) => void} action
+ * @returns {Promise<Request["result"]>}
+ */
+function completeDBRequest(request, action) {
+    return new Promise((resolve, reject) => {
+        request.addEventListener("success", () => resolve(request.result));
+        request.addEventListener("error", () => reject(request.error));
+        if (action) {
+            action(request);
+        }
+    });
+}
+
+/**
+ * @template {string | string[]} StoreNames
+ * @param {IDBDatabase} db
+ * @param {StoreNames} storeNames
+ * @param {IDBTransactionMode} mode
+ * @param {(stores: StoreNames extends string ? IDBObjectStore : { [dbName: string]: IDBObjectStore }) => void} action
+ * @returns {Promise<void>}
+ */
+function withTransaction(db, storeNames, mode, action) {
+    const transaction = db.transaction(storeNames, mode);
+    let stores;
+    if (Array.isArray(storeNames)) {
+        storeNames.forEach((name) => (stores[name] = transaction.objectStore(name)));
+    } else {
+        stores = transaction.objectStore(storeNames);
+    }
+    action(stores);
+    return new Promise((resolve, reject) => {
+        transaction.addEventListener("complete", () => resolve());
+        transaction.addEventListener("error", () => reject(transaction.error));
+    });
+}
+
 const globalSearchMaxCount = 100;
 const chunkSize = 32;
 const stepTimeLimit = 15;
@@ -27,7 +66,9 @@ const SearchEngine = {
         versionIndex: null,
         branchInfo: null,
         enums: {},
-        enumList: []
+        enumList: [],
+        /** @type {IDBDatabase} */
+        db: null
     },
     indexes: Object.freeze(Indexes),
     state: Vue.observable({
@@ -40,7 +81,7 @@ const SearchEngine = {
         enumList: [gloablSearchEnum],
         ready: false
     }),
-    updateState(versionIndex, branchInfo, branchData) {
+    async updateState(versionIndex, branchInfo, branchData) {
         this.current.versionIndex = versionIndex;
         this.current.branchInfo = branchInfo;
         this.current.enums = branchData.enums;
@@ -49,6 +90,12 @@ const SearchEngine = {
             name: e[1],
             description: e[2]
         }));
+        try {
+            this.current.db = await this.loadModifierDB(versionIndex.id, branchInfo.id);
+            await this.applyModifiers(this.current.enums);
+        } catch (err) {
+            console.warn(err);
+        }
         const state = this.state;
         state.versionType = versionIndex.id;
         state.versionName = versionIndex.name;
@@ -70,7 +117,7 @@ const SearchEngine = {
         branchInfo = versionIndex.branchList.find((e) => e.id == branch);
         if (!branchInfo) branchInfo = versionIndex.branchList[0];
         branchData = await (await fetch(branchInfo.dataUrl)).json();
-        this.updateState(versionIndex, branchInfo, branchData);
+        await this.updateState(versionIndex, branchInfo, branchData);
     },
     newSearchSession() {
         const reactiveSession = Object.assign(
@@ -240,6 +287,89 @@ const SearchEngine = {
             });
         }
         return chunk;
+    },
+    async updateEnumEntry(enumId, key, value) {
+        const selectedEnum = this.current.enums[enumId];
+        if (selectedEnum && key in selectedEnum && selectedEnum[key] != value) {
+            selectedEnum[key] = value;
+            await this.setModifier(enumId, key, value);
+        }
+    },
+    async loadModifierDB() {
+        return await completeDBRequest(indexedDB.open("search-engine", 1), (req) => {
+            req.addEventListener("upgradeneeded", (ev) => {
+                const db = req.result;
+                if (ev.oldVersion < 1) {
+                    const store = db.createObjectStore("modifiers", {
+                        keyPath: ["versionType", "branchId", "enumId", "key"]
+                    });
+                    store.createIndex("enumId", ["versionType", "branchId", "enumId"], { unique: false });
+                    store.createIndex("branchId", ["versionType", "branchId"], { unique: false });
+                }
+            });
+        });
+    },
+    async applyModifiers(enumMap) {
+        const { db, versionIndex, branchInfo } = this.current;
+        await withTransaction(db, "modifiers", "readwrite", async (store) => {
+            const index = store.index("branchId");
+            const modifiers = await completeDBRequest(index.getAll([versionIndex.id, branchInfo.id]));
+            modifiers.forEach((modifier) => {
+                const enumEntries = enumMap[modifier.enumId];
+                if (enumEntries) {
+                    if (modifier.key in enumEntries) {
+                        if (enumEntries[modifier.key] != modifier.value) {
+                            enumEntries[modifier.key] = modifier.value;
+                        } else {
+                            store.delete([versionIndex.id, branchInfo.id, modifier.enumId, modifier.key]);
+                        }
+                    }
+                }
+            });
+        });
+    },
+    async setModifier(enumId, key, value, action) {
+        const { db, versionIndex, branchInfo } = this.current;
+        await withTransaction(db, "modifiers", "readwrite", async (store) => {
+            const modifierKV = {};
+            if (action) {
+                modifierKV[action] = true;
+            }
+            store.put({
+                versionType: versionIndex.id,
+                branchId: branchInfo.id,
+                enumId,
+                key,
+                value,
+                ...modifierKV
+            });
+        });
+    },
+    async exportModifiers() {
+        const { db } = this.current;
+        let name, data;
+        await withTransaction(db, "modifiers", "readwrite", async (store) => {
+            name = store.name;
+            data = await completeDBRequest(store.getAll());
+        });
+        return Buffer.from(
+            JSON.stringify({
+                version: db.version,
+                name,
+                data
+            })
+        );
+    },
+    async loadModifiers(buffer) {
+        const { db } = this.current;
+        let data = JSON.parse(buffer.toString());
+        await withTransaction(db, "modifiers", "readwrite", async (store) => {
+            if (data.name == store.name && data.version == db.version) {
+                data.data.forEach((e) => store.put(e));
+            } else {
+                throw "database signature mismatch";
+            }
+        });
     }
 };
 
