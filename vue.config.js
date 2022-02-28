@@ -1,6 +1,9 @@
 module.exports = {
     transpileDependencies: ["vuetify"],
     publicPath: "", // use relative path
+    configureWebpack: {
+        devtool: "source-map"
+    },
     pwa: {
         name: "MCBEID表",
         manifestOptions: {
@@ -27,11 +30,7 @@ module.exports = {
         },
         workboxPluginMode: "GenerateSW",
         workboxOptions: {
-            exclude: [
-                /\.(js|css)\.map$/i,
-                /\.zip/i,
-                /data\/(.*)index.json/i
-            ],
+            exclude: [/\.(js|css)\.map$/i, /\.zip/i, /data\/(.*)index.json/i],
             runtimeCaching: [
                 {
                     urlPattern: new RegExp("^https://fonts.googleapis.com/"),

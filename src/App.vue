@@ -204,83 +204,13 @@
           </tooltip-menu-list-item>
         </v-list>
       </v-menu>
-      <v-dialog v-model="branchMenu.visible" max-width="500px">
-        <v-list class="branch-menu overflow-y-auto" max-height="90vh">
-          <v-list-group class="version-group" v-model="branchMenu.versionGroup">
-            <template v-slot:activator>
-              <v-list-item-content>
-                <v-list-item-title>
-                  {{
-                    $t("branchMenu.currentVersion", [
-                      $t("branchMenu.versionTemplate", [
-                        activeVersionInfo.name,
-                        activeVersionInfo.dataVersion,
-                      ]),
-                    ])
-                  }}
-                </v-list-item-title>
-              </v-list-item-content>
-            </template>
-            <v-list-item
-              v-for="(versionInfo, i) in searchIndexes"
-              :key="i"
-              @click="versionType = versionInfo.id"
-            >
-              <v-list-item-content>
-                <v-list-item-title>
-                  {{
-                    $t("branchMenu.versionTemplate", [
-                      versionInfo.name,
-                      versionInfo.dataVersion,
-                    ])
-                  }}
-                </v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ versionInfo.description }}
-                </v-list-item-subtitle>
-              </v-list-item-content>
-              <v-icon v-if="activeVersionInfo == versionInfo">mdi-check</v-icon>
-            </v-list-item>
-          </v-list-group>
-          <v-divider></v-divider>
-          <v-list-group class="branch-group" v-model="branchMenu.branchGroup">
-            <template v-slot:activator>
-              <v-list-item-content>
-                <v-list-item-title>
-                  {{ $t("branchMenu.currentBranch", [activeBranchInfo.name]) }}
-                </v-list-item-title>
-              </v-list-item-content>
-            </template>
-            <v-list-item
-              v-for="(branchInfo, i) in availableBranches"
-              :key="i"
-              @click="branchId = branchInfo.id"
-            >
-              <v-list-item-content>
-                <v-list-item-title>
-                  {{ branchInfo.name }}
-                </v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ branchInfo.description }}
-                </v-list-item-subtitle>
-              </v-list-item-content>
-              <v-icon v-if="activeBranchInfo == branchInfo">mdi-check</v-icon>
-            </v-list-item>
-          </v-list-group>
-          <v-divider></v-divider>
-          <v-list-item
-            class="close-branch-menu"
-            link
-            @click="branchMenu.visible = false"
-          >
-            <v-list-item-content>
-              <v-list-item-title>
-                {{ $t("branchMenu.close") }}
-              </v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list>
-      </v-dialog>
+      <branch-menu
+        v-model="branchMenu.visible"
+        :group="branchMenu.group"
+        :version-type="versionType"
+        :branch-id="branchId"
+        @change="updateState($event)"
+      />
       <v-progress-linear
         :active="!session.idle"
         :value="session.progress"
@@ -376,6 +306,7 @@ import OptimizableList from "./components/OptimizableList.vue";
 import ButtonAlert from "./components/ButtonInfoAlert.vue";
 import IdCopyDialog from "./components/IDCopyDialog.vue";
 import TooltipMenuListItem from "./components/TooltipMenuListItem.vue";
+import BranchMenu from "./components/BranchMenu.vue";
 
 export default {
   name: "App",
@@ -385,20 +316,13 @@ export default {
     ButtonAlert,
     IdCopyDialog,
     TooltipMenuListItem,
+    BranchMenu,
   },
 
   data: () => ({
-    snackbar: {
-      visible: false,
-      text: "",
-      timeout: -1,
-    },
     branchMenu: {
       visible: false,
-      versionGroup: false,
-      branchGroup: true,
-      lastVersionType: "",
-      lastBranchId: "",
+      group: "",
     },
     idDetailDialog: {
       visible: false,
@@ -422,21 +346,6 @@ export default {
   }),
 
   computed: {
-    activeVersionInfo() {
-      return (
-        this.searchIndexes.find((e) => e.id == this.versionType) ||
-        this.searchIndexes[0]
-      );
-    },
-    availableBranches() {
-      return this.activeVersionInfo.branchList;
-    },
-    activeBranchInfo() {
-      return (
-        this.availableBranches.find((e) => e.id == this.branchId) ||
-        this.availableBranches[0]
-      );
-    },
     activeEnumInfo() {
       return SearchEngine.getEnumInfo(this.enumId);
     },
@@ -472,21 +381,9 @@ export default {
   },
 
   watch: {
-    "branchMenu.visible": function (newValue, oldValue) {
-      if (newValue && !oldValue) {
-        this.branchMenu.lastVersionType = this.versionType;
-        this.branchMenu.lastBranchId = this.branchId;
-      } else if (!newValue && oldValue) {
-        if (
-          this.branchMenu.lastVersionType != this.versionType ||
-          this.branchMenu.lastBranchId != this.branchId
-        ) {
-          this.loadCurrentBranch("switchBranch");
-        }
-      }
-    },
     searchText: "updateSearchSession",
-    enumId: "updateSearchSession",
+    searchBoxFocus: "checkHistoryStateChanged",
+    enumId: ["updateSearchSession", "checkHistoryStateChanged"],
     darkMode: {
       handler(newValue) {
         this.$vuetify.theme.dark = newValue;
@@ -562,26 +459,26 @@ export default {
       });
     },
     openBranchMenuAndOpenGroup(group) {
+      this.branchMenu.group = group;
       this.branchMenu.visible = true;
-      if (group == "version") {
-        this.branchMenu.versionGroup = true;
-        this.branchMenu.branchGroup = false;
-      } else {
-        this.branchMenu.versionGroup = false;
-        this.branchMenu.branchGroup = true;
-      }
     },
     showIDDetail(entry) {
-      this.idDetailDialog.visible = true;
       this.idDetailDialog.entry = entry;
+      this.idDetailDialog.visible = true;
     },
-    async updateState(state) {
-      if (state.searchText != null) {
-        this.searchText = state.searchText;
-      }
-      if (state.enumId != null) {
-        this.enumId = state.enumId;
-      }
+    async updateState(state, scene) {
+      const oldState = {
+        ...state,
+        versionType: this.versionType,
+        branchId: this.branchId,
+        enumId: this.enumId,
+        searchText: this.searchText,
+      };
+      const changedFields = Object.keys(state).filter(
+        (k) => state[k] != oldState[k]
+      );
+      this.pushHistoryState(scene);
+      changedFields.forEach((k) => (this[k] = state[k]));
       if (state.entryValue != null) {
         this.idDetailDialog.saving = true;
         await SearchEngine.updateEnumEntry(
@@ -591,6 +488,37 @@ export default {
         );
         this.idDetailDialog.saving = false;
       }
+      if (
+        changedFields.includes("versionType") ||
+        changedFields.includes("branchId")
+      ) {
+        this.loadCurrentBranch(scene);
+      }
+      this.pushHistoryState(scene);
+    },
+    pushHistoryState(scene) {
+      const state = {
+        versionType: this.versionType,
+        branchId: this.branchId,
+        enumId: this.enumId,
+        searchText: this.searchText,
+      };
+      if (scene == "initial") {
+        history.replaceState(state, document.title);
+      } else {
+        let stateChanged = true;
+        if (history.state) {
+          stateChanged = Object.keys(state).some(
+            (k) => state[k] != history.state[k]
+          );
+        }
+        if (stateChanged && scene != "popHistoryState") {
+          history.pushState(state, document.title);
+        }
+      }
+    },
+    checkHistoryStateChanged() {
+      this.pushHistoryState();
     },
     async exportModifiers() {
       const buffer = await SearchEngine.exportModifiers();
@@ -633,7 +561,10 @@ export default {
       (current, _, storage) => {
         if (!current && storage.lastDataVersion) {
           storage.versionType = "beta";
-          storage.branchId = this.availableBranches[storage.branchIndex]?.id;
+          storage.branchId = SearchEngine.getBranchIdByIndex(
+            "beta",
+            storage.branchIndex
+          );
           storage.enumId = SearchEngine.globalSearchEnumId;
           storage.lastDataVersion = { beta: storage.lastDataVersion };
           delete storage.branchIndex;
@@ -642,8 +573,13 @@ export default {
         }
       }
     );
-    this.loadCurrentBranch("start");
+    this.loadCurrentBranch("initial");
     this.notifyGameVersionUpdate();
+    this.pushHistoryState("initial");
+    window.addEventListener("popstate", (ev) => {
+      if (!ev.state) return;
+      this.updateState(ev.state, "popHistoryState");
+    });
   },
 };
 </script>
@@ -651,8 +587,5 @@ export default {
 <style>
 html {
   overflow-y: auto !important;
-}
-.branch-menu .v-list-item__subtitle {
-  white-space: normal;
 }
 </style>

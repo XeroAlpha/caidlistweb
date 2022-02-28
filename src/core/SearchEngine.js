@@ -31,7 +31,7 @@ function completeDBRequest(request, action) {
  * @param {IDBDatabase} db
  * @param {StoreNames} storeNames
  * @param {IDBTransactionMode} mode
- * @param {(stores: StoreNames extends string ? IDBObjectStore : { [dbName: string]: IDBObjectStore }) => void} action
+ * @param {(stores: StoreNames extends string ? IDBObjectStore : Record<string, IDBObjectStore>) => void} action
  * @returns {Promise<void>}
  */
 function withTransaction(db, storeNames, mode, action) {
@@ -106,17 +106,25 @@ const SearchEngine = {
         state.enumList = [gloablSearchEnum, ...this.current.enumList];
         state.ready = true;
     },
+    getVersionIndex(versionType) {
+        return this.indexes.find((e) => e.id == versionType) || this.indexes[0];
+    },
+    getBranchInfo(versionIndex, branchId) {
+        return versionIndex.branchList.find((e) => e.id == branchId) || versionIndex.branchList[0];
+    },
+    getBranchIdByIndex(versionType, index) {
+        const versionIndex = this.getVersionIndex(versionType);
+        const branchInfo = versionIndex.branchList[index];
+        return branchInfo ? branchInfo.id : versionIndex.branchList[0].id;
+    },
     getEnumInfo(enumId) {
         return this.state.enumList.find((e) => e.id == enumId) || this.state.enumList[0];
     },
-    async loadBranch(versionType, branch) {
-        let versionIndex, branchInfo, branchData;
+    async loadBranch(versionType, branchId) {
         this.state.ready = false;
-        versionIndex = this.indexes.find((e) => e.id == versionType);
-        if (!versionIndex) versionIndex = this.indexes[0];
-        branchInfo = versionIndex.branchList.find((e) => e.id == branch);
-        if (!branchInfo) branchInfo = versionIndex.branchList[0];
-        branchData = await (await fetch(branchInfo.dataUrl)).json();
+        const versionIndex = this.getVersionIndex(versionType);
+        const branchInfo = this.getBranchInfo(versionIndex, branchId);
+        const branchData = await (await fetch(branchInfo.dataUrl)).json();
         await this.updateState(versionIndex, branchInfo, branchData);
     },
     newSearchSession() {
@@ -221,7 +229,6 @@ const SearchEngine = {
         let i, chunk, stepChunkCount, stepStartTime, stepEndTime;
         stepStartTime = Date.now();
         stepChunkCount = 0;
-        console.time("search:" + textLowerCase);
         for (i = 0; i < enumEntries.length; i += chunkSize) {
             stepChunkCount++;
             chunk = enumEntries.slice(i, i + chunkSize);
@@ -245,7 +252,6 @@ const SearchEngine = {
                 break;
             }
         }
-        console.timeEnd("search:" + textLowerCase);
         await Vue.nextTick();
     },
     doSearchEnumChunk(enumId, chunk, textLowerCase) {
