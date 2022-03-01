@@ -264,22 +264,18 @@ const SearchEngine = {
                     if (indexInKey >= 0 || indexInValue >= 0) {
                         let result = { enumId, key, value };
                         if (indexInKey >= 0) {
-                            result = {
-                                ...result,
-                                keyHighlight: true,
-                                keyPre: key.slice(0, indexInKey),
-                                keyHl: key.slice(indexInKey, indexInKey + textLength),
-                                keyPost: key.slice(indexInKey + textLength)
-                            };
+                            result.keyHighlight = [
+                                key.slice(0, indexInKey),
+                                key.slice(indexInKey, indexInKey + textLength),
+                                key.slice(indexInKey + textLength)
+                            ];
                         }
                         if (indexInValue >= 0) {
-                            result = {
-                                ...result,
-                                valueHighlight: true,
-                                valuePre: value.slice(0, indexInValue),
-                                valueHl: value.slice(indexInValue, indexInValue + textLength),
-                                valuePost: value.slice(indexInValue + textLength)
-                            };
+                            result.valueHighlight = [
+                                value.slice(0, indexInValue),
+                                value.slice(indexInValue, indexInValue + textLength),
+                                value.slice(indexInValue + textLength)
+                            ];
                         }
                         return result;
                     } else {

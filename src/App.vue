@@ -34,10 +34,11 @@
         </template>
         <v-list class="main-menu overflow-y-auto" max-height="90vh">
           <v-list-item-group
-            v-model="enumId"
             mandatory
             color="primary"
             class="enum-select"
+            :value="enumId"
+            @change="updateState({ enumId: $event })"
           >
             <tooltip-menu-list-item
               left
@@ -235,7 +236,7 @@
         <v-list-item
           v-for="(enumInfo, i) in engine.enumList"
           :key="i"
-          @click="(enumId = enumInfo.id), focusSearchBox()"
+          @click="updateState({ enumId: enumInfo.id }), focusSearchBox()"
         >
           <v-list-item-content>
             <v-list-item-title>
@@ -269,21 +270,11 @@
         <template v-slot:default="{ item }">
           <v-list-item ripple :key="item.key" @click="showIDDetail(item)">
             <v-list-item-content>
-              <v-list-item-title v-if="item.keyHighlight">
-                <span>{{ item.keyPre }}</span>
-                <span class="highlight--text">{{ item.keyHl }}</span>
-                <span>{{ item.keyPost }}</span>
+              <v-list-item-title>
+                <highlight-text-label :value="item.keyHighlight || item.key" />
               </v-list-item-title>
-              <v-list-item-title v-else>
-                {{ item.key }}
-              </v-list-item-title>
-              <v-list-item-subtitle v-if="item.valueHighlight">
-                <span>{{ item.valuePre }}</span>
-                <span class="highlight--text">{{ item.valueHl }}</span>
-                <span>{{ item.valuePost }}</span>
-              </v-list-item-subtitle>
-              <v-list-item-subtitle v-else-if="item.value">
-                {{ item.value }}
+              <v-list-item-subtitle v-if="item.value">
+                <highlight-text-label :value="item.valueHighlight || item.value" />
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
@@ -294,7 +285,7 @@
       v-model="idDetailDialog.visible"
       :editable="editorMode && !idDetailDialog.saving"
       :entry="idDetailDialog.entry"
-      :state="{ enumId, searchText }"
+      :state="{ versionType, branchId, enumId, searchText }"
       @update="updateState($event)"
     ></id-copy-dialog>
   </v-app>
@@ -302,11 +293,13 @@
 
 <script>
 import SearchEngine from "./core/SearchEngine.js";
+import HistoryState from "./core/HistoryState.js";
 import OptimizableList from "./components/OptimizableList.vue";
 import ButtonAlert from "./components/ButtonInfoAlert.vue";
 import IdCopyDialog from "./components/IDCopyDialog.vue";
 import TooltipMenuListItem from "./components/TooltipMenuListItem.vue";
 import BranchMenu from "./components/BranchMenu.vue";
+import HighlightTextLabel from "./components/HighlightTextLabel.js";
 
 export default {
   name: "App",
@@ -317,6 +310,7 @@ export default {
     IdCopyDialog,
     TooltipMenuListItem,
     BranchMenu,
+    HighlightTextLabel,
   },
 
   data: () => ({
@@ -415,7 +409,7 @@ export default {
     async loadCurrentBranch(scene) {
       try {
         await SearchEngine.loadBranch(this.versionType, this.branchId);
-        this.enumId = SearchEngine.getEnumInfo(this.enumId).id;
+        this.updateState({ enumId: SearchEngine.getEnumInfo(this.enumId).id });
         this.updateSearchSession();
         if (scene == "switchBranch") {
           this.$toastT("branch.switchTo", [
@@ -477,7 +471,7 @@ export default {
       const changedFields = Object.keys(state).filter(
         (k) => state[k] != oldState[k]
       );
-      this.pushHistoryState(scene);
+      HistoryState.syncState();
       changedFields.forEach((k) => (this[k] = state[k]));
       if (state.entryValue != null) {
         this.idDetailDialog.saving = true;
@@ -494,31 +488,10 @@ export default {
       ) {
         this.loadCurrentBranch(scene);
       }
-      this.pushHistoryState(scene);
-    },
-    pushHistoryState(scene) {
-      const state = {
-        versionType: this.versionType,
-        branchId: this.branchId,
-        enumId: this.enumId,
-        searchText: this.searchText,
-      };
-      if (scene == "initial") {
-        history.replaceState(state, document.title);
-      } else {
-        let stateChanged = true;
-        if (history.state) {
-          stateChanged = Object.keys(state).some(
-            (k) => state[k] != history.state[k]
-          );
-        }
-        if (stateChanged && scene != "popHistoryState") {
-          history.pushState(state, document.title);
-        }
-      }
+      HistoryState.syncState();
     },
     checkHistoryStateChanged() {
-      this.pushHistoryState();
+      HistoryState.triggerSync();
     },
     async exportModifiers() {
       const buffer = await SearchEngine.exportModifiers();
@@ -529,6 +502,19 @@ export default {
       a.download = this.$t("mainMenu.exportModifierFilename") + ".json";
       a.click();
       URL.revokeObjectURL(a.href);
+    },
+    applyStateFromHash() {
+      const result = /#(\w+)-(\w+)\/(\w+)\/(.+)/.exec(location.hash);
+      if (result) {
+        const reqUrl = location.origin + location.pathname + location.search;
+        history.replaceState(history.state, document.title, reqUrl);
+        this.updateState({
+          versionType: result[1],
+          branchId: result[2],
+          enumId: result[3],
+          searchText: decodeURIComponent(result[4]),
+        });
+      }
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();
@@ -573,12 +559,18 @@ export default {
         }
       }
     );
+    HistoryState.bindReactiveObject(this, [
+      "versionType",
+      "branchId",
+      "enumId",
+      "searchText",
+    ]);
+    this.applyStateFromHash();
+    HistoryState.registerListener();
     this.loadCurrentBranch("initial");
     this.notifyGameVersionUpdate();
-    this.pushHistoryState("initial");
-    window.addEventListener("popstate", (ev) => {
-      if (!ev.state) return;
-      this.updateState(ev.state, "popHistoryState");
+    window.addEventListener("hashchange", () => {
+      this.applyStateFromHash();
     });
   },
 };

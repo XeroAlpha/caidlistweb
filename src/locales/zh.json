@@ -76,6 +76,7 @@
         "searchDescription": "搜索描述",
         "edit": "编辑",
         "save": "保存",
+        "copyLink": "复制链接",
         "close": "关闭"
     },
     "copyableTextLabel": {
@@ -99,16 +100,16 @@
             "switchTo": "切换至分支：{0} - {1}"
         },
         "idCopyDialog": {
-            "copySuccess": "复制“{0}”成功",
-            "copyFailed": "复制失败，请尝试在其他浏览器打开并复制",
             "jumpTo": "已切换至“{0}”枚举",
+            "linkCopied": "链接已复制",
             "searchGlobal": "已切换至全局搜索",
             "replaceSearch": "已切换为搜索“{0}”"
         },
-        "copyableTextLabel": {
-            "copySuccess": "内容已复制",
-            "copyFailedInaccessible": "复制失败，请尝试在其他浏览器打开并复制",
-            "copyFailedUnknown": "复制失败，请尝试在其他浏览器打开并复制\n{0}"
+        "copyText": {
+            "success": "文本已复制：{0}",
+            "successEllipsis": "文本已复制：{0}……",
+            "failedInaccessible": "复制失败，请尝试在其他浏览器打开并复制",
+            "failedUnknown": "复制失败，请尝试在其他浏览器打开并复制\n{0}"
         }
     }
 }

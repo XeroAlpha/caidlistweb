@@ -10,7 +10,10 @@
       <v-card-title class="id-key">
         {{ $t("idCopyDialog.title") }}
       </v-card-title>
-      <v-simple-table class="id-dialog-table" :class="{ 'hide-actions': editMode }">
+      <v-simple-table
+        class="id-dialog-table"
+        :class="{ 'hide-actions': editMode }"
+      >
         <template v-slot:default>
           <tbody>
             <tr>
@@ -28,7 +31,7 @@
                   icon="mdi-crosshairs"
                   :label="$t('idCopyDialog.jumpTo')"
                   v-if="isGlobalSearch"
-                  @click="handleAndCloseDialog('jumpTo')"
+                  @click="handleEvent('jumpTo')"
                 />
                 <tooltip-icon-button
                   left
@@ -39,7 +42,7 @@
                   icon="mdi-database-search-outline"
                   :label="$t('idCopyDialog.searchGlobal')"
                   v-else
-                  @click="handleAndCloseDialog('searchGlobal')"
+                  @click="handleEvent('searchGlobal')"
                 />
               </td>
             </tr>
@@ -65,7 +68,7 @@
                   icon="mdi-magnify"
                   :disabled="isSearchingKey"
                   :label="$t('idCopyDialog.searchId')"
-                  @click="handleAndCloseDialog('searchId')"
+                  @click="handleEvent('searchId')"
                 />
               </td>
             </tr>
@@ -90,7 +93,7 @@
                   icon="mdi-magnify"
                   :disabled="isSearchingValue || !entry.value"
                   :label="$t('idCopyDialog.searchDescription')"
-                  @click="handleAndCloseDialog('searchValue')"
+                  @click="handleEvent('searchValue')"
                 />
               </td>
             </tr>
@@ -103,7 +106,7 @@
           color="primary"
           class="save"
           v-if="editMode"
-          @click="handleAndCloseDialog('save')"
+          @click="handleEvent('save')"
         >
           {{ $t("idCopyDialog.save") }}
         </v-btn>
@@ -113,17 +116,21 @@
           class="edit"
           :disabled="!editable"
           v-else-if="editVisible"
-          @click="handleAndCloseDialog('edit')"
+          @click="handleEvent('edit')"
         >
           {{ $t("idCopyDialog.edit") }}
         </v-btn>
-        <v-spacer></v-spacer>
         <v-btn
           text
           color="primary"
-          class="close"
-          @click="handleAndCloseDialog('close')"
+          class="copy-link"
+          v-else
+          @click="handleEvent('copyLink')"
         >
+          {{ $t("idCopyDialog.copyLink") }}
+        </v-btn>
+        <v-spacer></v-spacer>
+        <v-btn text color="primary" class="close" @click="handleEvent('close')">
           {{ $t("idCopyDialog.close") }}
         </v-btn>
       </v-card-actions>
@@ -184,6 +191,13 @@ export default {
     isSearchingValue() {
       return this.state.searchText == this.entry.value;
     },
+    urlHash() {
+      return [
+        "#" + this.state.versionType + "-" + this.state.branchId,
+        this.state.enumId,
+        encodeURIComponent(this.entry.key),
+      ].join("/");
+    },
   },
 
   watch: {
@@ -192,15 +206,16 @@ export default {
         this.editMode = false;
         this.editVisible = this.editable;
       }
-    }
+    },
   },
 
   methods: {
-    handleAndCloseDialog(eventType) {
+    copyEntryLink() {
+      const reqUrl = location.origin + location.pathname + location.search;
+      this.$copyText(reqUrl + this.urlHash, "idCopyDialog.linkCopied");
+    },
+    handleEvent(eventType) {
       switch (eventType) {
-        case "close":
-          this.$emit("visibility-changed", false);
-          break;
         case "jumpTo":
           this.$emit("update", {
             enumId: this.entry.enumId,
@@ -241,6 +256,12 @@ export default {
             entryKey: this.memory.key,
             entryValue: this.memory.value,
           });
+          break;
+        case "copyLink":
+          this.copyEntryLink();
+          break;
+        case "close":
+          this.$emit("visibility-changed", false);
           break;
       }
     },

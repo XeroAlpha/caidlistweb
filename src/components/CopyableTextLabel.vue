@@ -32,17 +32,8 @@ export default {
     touchTimeout: -1,
   }),
   methods: {
-    async copy() {
-      try {
-        if (typeof navigator != "undefined" && navigator.clipboard) {
-          await navigator.clipboard.writeText(this.text);
-          this.$toastT("copyableTextLabel.copySuccess");
-        } else {
-          this.$toastT("copyableTextLabel.copyFailedInaccessible");
-        }
-      } catch (err) {
-        this.$toastT("copyableTextLabel.copyFailedUnknown", [err]);
-      }
+    copy() {
+      return this.$copyText(this.text);
     },
     touchDown() {
       this.touching = true;
