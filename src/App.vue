@@ -7,17 +7,18 @@
         flat
         dense
         single-line
-        clearable
         hide-details="auto"
         prepend-icon="mdi-magnify"
+        :append-icon="searchBoxFocus ? null : 'mdi-link'"
         v-model="searchText"
         :label="$t('searchBox.label')"
         :placeholder="searchBoxPlaceholder"
         class="search-box"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
+        @click:append="copySearchLink()"
       ></v-text-field>
-      <v-menu>
+      <v-menu right>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
             outlined
@@ -28,7 +29,12 @@
             v-bind="attrs"
             v-on="on"
           >
-            {{ $t(activeEnumInfo.name) }}
+            <span
+              class="text-truncate text-none"
+              style="max-width: 25vw; display: inline-block"
+            >
+              {{ $t(activeEnumInfo.name) }}
+            </span>
             <v-icon class="ml-2">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
@@ -274,7 +280,9 @@
                 <highlight-text-label :value="item.keyHighlight || item.key" />
               </v-list-item-title>
               <v-list-item-subtitle v-if="item.value">
-                <highlight-text-label :value="item.valueHighlight || item.value" />
+                <highlight-text-label
+                  :value="item.valueHighlight || item.value"
+                />
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
@@ -371,6 +379,13 @@ export default {
       } else {
         return this.$t("document.title");
       }
+    },
+    urlHash() {
+      return [
+        "#" + this.versionType + "-" + this.branchId,
+        this.enumId,
+        encodeURIComponent(this.searchText),
+      ].join("/");
     },
   },
 
@@ -475,10 +490,12 @@ export default {
       changedFields.forEach((k) => (this[k] = state[k]));
       if (state.entryValue != null) {
         this.idDetailDialog.saving = true;
+        this.idDetailDialog.entry.value = state.entryValue;
+        this.idDetailDialog.entry.valueHighlight = null;
         await SearchEngine.updateEnumEntry(
           this.enumId,
           this.idDetailDialog.entry.key,
-          (this.idDetailDialog.entry.value = state.entryValue)
+          this.idDetailDialog.entry.value
         );
         this.idDetailDialog.saving = false;
       }
@@ -504,7 +521,7 @@ export default {
       URL.revokeObjectURL(a.href);
     },
     applyStateFromHash() {
-      const result = /#(\w+)-(\w+)\/(\w+)\/(.+)/.exec(location.hash);
+      const result = /#(\w+)-(\w+)\/(\S+)\/(.*)/.exec(location.hash);
       if (result) {
         const reqUrl = location.origin + location.pathname + location.search;
         history.replaceState(history.state, document.title, reqUrl);
@@ -515,6 +532,10 @@ export default {
           searchText: decodeURIComponent(result[4]),
         });
       }
+    },
+    copySearchLink() {
+      const reqUrl = location.origin + location.pathname + location.search;
+      this.$copyText(reqUrl + this.urlHash, "idCopyDialog.linkCopied");
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();
@@ -579,5 +600,10 @@ export default {
 <style>
 html {
   overflow-y: auto !important;
+}
+@media (max-width: 480px) {
+  .search-box .v-input__prepend-outer {
+    display: none;
+  }
 }
 </style>

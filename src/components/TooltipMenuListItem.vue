@@ -2,7 +2,7 @@
   <v-tooltip
     v-bind="$props"
     transition="v-fade-transition"
-    :disabled="!tooltip"
+    :disabled="!isHoverable || !tooltip"
   >
     <template v-slot:activator="{ on, attrs }">
       <v-list-item
@@ -27,6 +27,11 @@ export default {
     },
   },
   inheritAttrs: false,
+  computed: {
+    isHoverable() {
+      return matchMedia("(hover: hover)").matches;
+    },
+  },
 };
 </script>
 
