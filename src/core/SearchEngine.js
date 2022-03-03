@@ -178,10 +178,11 @@ const SearchEngine = {
         const { text } = session.currentSearch;
         let correction = text;
         Corrections.words.forEach((e) => {
-            correction = correction.replace(e[0], e[1]);
+            const esc = e[0].replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+            correction = correction.replace(new RegExp(esc, "ig"), e[1]);
         });
         Corrections.patterns.forEach((e) => {
-            correction = correction.replace(new RegExp(e[0], "g"), e[1]);
+            correction = correction.replace(new RegExp(e[0], "ig"), e[1]);
         });
         if (correction != text) {
             session.correction = correction;

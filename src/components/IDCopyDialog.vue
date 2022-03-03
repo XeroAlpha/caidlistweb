@@ -171,12 +171,14 @@ export default {
   }),
 
   computed: {
+    rawEnumName() {
+      return SearchEngine.getEnumInfo(this.entry.enumId).name;
+    },
     enumName() {
-      const enumName = SearchEngine.getEnumInfo(this.entry.enumId).name;
       if (this.isGlobalSearch) {
-        return this.$t("idCopyDialog.enumWhenGlobal", [enumName]);
+        return this.$t("idCopyDialog.enumWhenGlobal", [this.rawEnumName]);
       } else {
-        return enumName;
+        return this.rawEnumName;
       }
     },
     isCurrentEnum() {
@@ -220,7 +222,7 @@ export default {
           this.$emit("update", {
             enumId: this.entry.enumId,
           });
-          this.$toast(this.$t("idCopyDialog.jumpToPrompt", [this.enumName]));
+          this.$toast(this.$t("idCopyDialog.jumpToPrompt", [this.rawEnumName]));
           break;
         case "searchGlobal":
           this.$emit("update", {
