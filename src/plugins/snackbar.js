@@ -5,7 +5,8 @@ const SnackBarComponent = {
     data: {
         visible: false,
         timeout: 5000,
-        text: ""
+        text: "",
+        actions: []
     },
     render(h) {
         return h(
@@ -23,24 +24,30 @@ const SnackBarComponent = {
                 scopedSlots: {
                     action: () => {
                         return h(
-                            VBtn,
-                            {
-                                props: {
-                                    color: "highlight",
-                                    text: true
-                                },
-                                on: {
-                                    click: () => {
-                                        this.visible = false;
-                                    }
-                                }
-                            },
-                            [this.$t("toast.close")]
+                            "div",
+                            this.actions.map((action) => {
+                                return h(
+                                    VBtn,
+                                    {
+                                        props: {
+                                            color: "highlight",
+                                            text: true
+                                        },
+                                        on: {
+                                            click: () => {
+                                                action.action();
+                                                this.visible = false;
+                                            }
+                                        }
+                                    },
+                                    [action.text]
+                                );
+                            })
                         );
                     }
                 }
             },
-            this.text.split("\n").map(line => h("div", [line]))
+            this.text.split("\n").map((line) => h("div", [line]))
         );
     }
 };
@@ -48,7 +55,7 @@ const SnackBarComponent = {
 const snackBarSymbol = "__snackBar__component__";
 
 export default function (Vue) {
-    Vue.prototype.$toast = function (text, timeout) {
+    Vue.prototype.$toast = function (text, options) {
         let snackBarComponent = this.$root[snackBarSymbol];
         if (!snackBarComponent) {
             let snackBarEl = document.createElement("div");
@@ -62,15 +69,21 @@ export default function (Vue) {
         }
         snackBarComponent.timeout = -1;
         this.$nextTick(() => {
+            const opts = options || {};
             snackBarComponent.visible = true;
             snackBarComponent.text = text;
-            snackBarComponent.timeout = timeout || 5000;
+            snackBarComponent.timeout = opts.timeout || 5000;
+            let actions;
+            if (opts.actions) {
+                actions = opts.actions;
+            } else if (opts.action) {
+                actions = [opts.action];
+            } else {
+                actions = [null];
+            }
+            snackBarComponent.actions = actions.map((action) => {
+                return action || { text: this.$t("toast.close"), action: () => void 0 };
+            });
         });
     };
-
-    if (Vue.prototype.$t) {
-        Vue.prototype.$toastT = function (key, values) {
-            return this.$toast(this.$t("toast." + key, values));
-        }
-    }
 }

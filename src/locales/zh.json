@@ -16,6 +16,8 @@
         "branchTooltip": "分支是在同一版本不同条件下提取的条目",
         "version": "版本：{0}",
         "versionTooltip": "版本是提取条目时游戏的版本",
+        "copySearchLink": "复制搜索链接",
+        "copySearchLinkTooltip": "复制能跳转至当前搜索的URL，用于收藏或分享",
         "optimizedList": "性能优化：{0}",
         "optimizedListTooltip": "启用后只会加载显示在屏幕上的条目，可能影响某些设备上的显示效果",
         "darkMode": "深色模式：{0}",
@@ -27,10 +29,6 @@
         "exportModifierTooltip": "导出编辑模式下进行的编辑更改",
         "installPWA": "安装离线版",
         "installPWATooltip": "以应用形式安装便于快速打开与离线使用",
-        "applyUpdate": "应用更新",
-        "applyUpdateTooltip": "强制更新离线缓存并刷新页面",
-        "checkUpdate": "检测更新",
-        "checkUpdateTooltip": "检查离线缓存是否有更新版本",
         "offlinePack": "下载压缩包",
         "offlinePackTooltip": "下载一个包含所有条目文本文件的压缩包",
         "dataSource": "数据来源",
@@ -77,39 +75,34 @@
         "edit": "编辑",
         "save": "保存",
         "copyLink": "复制链接",
-        "close": "关闭"
+        "close": "关闭",
+        "jumpToPrompt": "已切换至“{0}”枚举",
+        "linkCopiedPrompt": "链接已复制",
+        "searchGlobalPrompt": "已切换至全局搜索",
+        "replaceSearchPrompt": "已切换为搜索“{0}”"
     },
     "copyableTextLabel": {
         "copy": "复制"
     },
+    "resUpdate": {
+        "updateFound": "检测到存在更新，正在预载……",
+        "updateReady": "更新已预载完成，稍后将自动应用",
+        "updateNow": "立即更新",
+        "gameVersion": "游戏版本已更新：\n{0}",
+        "gameVersionEntry": "{0}：{1} -> {2}",
+        "gameVersionEntryJoiner": "\n"
+    },
+    "branch": {
+        "loadFailed": "获取数据失败：{0}",
+        "switchTo": "切换至分支：{0} - {1}"
+    },
+    "copyText": {
+        "success": "文本已复制：{0}",
+        "successEllipsis": "文本已复制：{0}……",
+        "failedInaccessible": "复制失败，请尝试在其他浏览器打开并复制",
+        "failedUnknown": "复制失败，请尝试在其他浏览器打开并复制\n{0}"
+    },
     "toast": {
-        "close": "关闭",
-        "checkUpdate": {
-            "checking": "正在检测更新",
-            "installing": "更新正在安装，稍后将自动应用",
-            "upToDate": "已是最新版本",
-            "failed": "获取更新失败：{0}"
-        },
-        "dataUpdate": {
-            "gameVersion": "游戏版本已更新：\n{0}",
-            "gameVersionEntry": "{0}：{1} -> {2}",
-            "gameVersionEntryJoiner": "\n"
-        },
-        "branch": {
-            "loadFailed": "获取数据失败：{0}",
-            "switchTo": "切换至分支：{0} - {1}"
-        },
-        "idCopyDialog": {
-            "jumpTo": "已切换至“{0}”枚举",
-            "linkCopied": "链接已复制",
-            "searchGlobal": "已切换至全局搜索",
-            "replaceSearch": "已切换为搜索“{0}”"
-        },
-        "copyText": {
-            "success": "文本已复制：{0}",
-            "successEllipsis": "文本已复制：{0}……",
-            "failedInaccessible": "复制失败，请尝试在其他浏览器打开并复制",
-            "failedUnknown": "复制失败，请尝试在其他浏览器打开并复制\n{0}"
-        }
+        "close": "关闭"
     }
 }

@@ -212,7 +212,7 @@ export default {
   methods: {
     copyEntryLink() {
       const reqUrl = location.origin + location.pathname + location.search;
-      this.$copyText(reqUrl + this.urlHash, "idCopyDialog.linkCopied");
+      this.$copyText(reqUrl + this.urlHash, "idCopyDialog.linkCopiedPrompt");
     },
     handleEvent(eventType) {
       switch (eventType) {
@@ -220,7 +220,7 @@ export default {
           this.$emit("update", {
             enumId: this.entry.enumId,
           });
-          this.$toastT("idCopyDialog.jumpTo", [this.enumName]);
+          this.$toast(this.$t("idCopyDialog.jumpToPrompt", [this.enumName]));
           break;
         case "searchGlobal":
           this.$emit("update", {
@@ -231,19 +231,23 @@ export default {
               searchText: this.entry.key,
             });
           }
-          this.$toastT("idCopyDialog.searchGlobal");
+          this.$toast(this.$t("idCopyDialog.searchGlobalPrompt"));
           break;
         case "searchId":
           this.$emit("update", {
             searchText: this.entry.key,
           });
-          this.$toastT("idCopyDialog.replaceSearch", [this.entry.key]);
+          this.$toast(
+            this.$t("idCopyDialog.replaceSearchPrompt", [this.entry.key])
+          );
           break;
         case "searchValue":
           this.$emit("update", {
             searchText: this.entry.value,
           });
-          this.$toastT("idCopyDialog.replaceSearch", [this.entry.value]);
+          this.$toast(
+            this.$t("idCopyDialog.replaceSearch", [this.entry.value])
+          );
           break;
         case "edit":
           this.editMode = true;

@@ -6,17 +6,16 @@
         outlined
         flat
         dense
+        clearable
         single-line
         hide-details="auto"
         prepend-icon="mdi-magnify"
-        :append-icon="searchBoxFocus ? null : 'mdi-link'"
         v-model="searchText"
         :label="$t('searchBox.label')"
         :placeholder="searchBoxPlaceholder"
         class="search-box"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
-        @click:append="copySearchLink()"
       ></v-text-field>
       <v-menu right>
         <template v-slot:activator="{ on, attrs }">
@@ -78,6 +77,17 @@
               {{ $t("mainMenu.branch", [engine.branchName]) }}
             </v-list-item-title>
           </tooltip-menu-list-item>
+          <tooltip-menu-list-item
+            left
+            :tooltip="$t('mainMenu.copySearchLinkTooltip')"
+            class="copy-search-link"
+            @click="copySearchLink()"
+          >
+            <v-list-item-title>
+              {{ $t("mainMenu.copySearchLink") }}
+            </v-list-item-title>
+          </tooltip-menu-list-item>
+          <v-divider></v-divider>
           <tooltip-menu-list-item
             left
             :tooltip="$t('mainMenu.optimizedListTooltip')"
@@ -144,28 +154,6 @@
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
             left
-            :tooltip="$t('mainMenu.applyUpdateTooltip')"
-            class="apply-update"
-            v-if="$pwa.updateReady"
-            @click="$pwa.forceUpdate()"
-          >
-            <v-list-item-title>
-              {{ $t("mainMenu.applyUpdate") }}
-            </v-list-item-title>
-          </tooltip-menu-list-item>
-          <tooltip-menu-list-item
-            left
-            :tooltip="$t('mainMenu.checkUpdateTooltip')"
-            class="check-update"
-            v-else-if="$pwa.ready"
-            @click="checkUpdate()"
-          >
-            <v-list-item-title>
-              {{ $t("mainMenu.checkUpdate") }}
-            </v-list-item-title>
-          </tooltip-menu-list-item>
-          <tooltip-menu-list-item
-            left
             :tooltip="$t('mainMenu.offlinePackTooltip')"
             class="offline-pack"
             :href="engine.offlineUrl"
@@ -216,7 +204,7 @@
         :group="branchMenu.group"
         :version-type="versionType"
         :branch-id="branchId"
-        @change="updateState($event)"
+        @change="updateState($event, 'switchBranch')"
       />
       <v-progress-linear
         :active="!session.idle"
@@ -384,7 +372,7 @@ export default {
       return [
         "#" + this.versionType + "-" + this.branchId,
         this.enumId,
-        encodeURIComponent(this.searchText),
+        encodeURIComponent(this.searchText || ""),
       ].join("/");
     },
   },
@@ -402,22 +390,31 @@ export default {
     title(newValue) {
       document.title = newValue;
     },
+    "$pwa.updateFound": function (newValue) {
+      if (newValue) {
+        this.$toast(this.$t("resUpdate.updateFound"));
+      }
+    },
+    "$pwa.updateReady": {
+      handler(newValue) {
+        if (newValue) {
+          this.$toast(this.$t("resUpdate.updateReady"), {
+            actions: [
+              {
+                text: this.$t("resUpdate.updateNow"),
+                action: () => {
+                  this.$pwa.forceUpdate();
+                },
+              },
+            ],
+          });
+        }
+      },
+      immediate: true,
+    },
   },
 
   methods: {
-    async checkUpdate() {
-      try {
-        this.$toastT("checkUpdate.checking");
-        if (await this.$pwa.checkUpdate()) {
-          this.$toastT("checkUpdate.installing");
-        } else {
-          this.$toastT("checkUpdate.upToDate");
-        }
-      } catch (err) {
-        console.warn(err);
-        this.$toastT("checkUpdate.failed", [err]);
-      }
-    },
     onWindowSizeChanged() {
       this.windowHeight = window.innerHeight;
     },
@@ -427,14 +424,16 @@ export default {
         this.updateState({ enumId: SearchEngine.getEnumInfo(this.enumId).id });
         this.updateSearchSession();
         if (scene == "switchBranch") {
-          this.$toastT("branch.switchTo", [
-            this.engine.versionName,
-            this.engine.branchName,
-          ]);
+          this.$toast(
+            this.$t("branch.switchTo", [
+              this.engine.versionName,
+              this.engine.branchName,
+            ])
+          );
         }
       } catch (err) {
         console.warn(err);
-        this.$toastT("branch.loadFailed", [err]);
+        this.$toast(this.$t("branch.loadFailed", [err]));
       }
     },
     notifyGameVersionUpdate() {
@@ -454,11 +453,13 @@ export default {
         }
       });
       if (updatedVersions.length) {
-        this.$toastT("dataUpdate.gameVersion", [
-          updatedVersions
-            .map((e) => this.$t("toast.dataUpdate.gameVersionEntry", e))
-            .join(this.$t("toast.dataUpdate.gameVersionEntryJoiner")),
-        ]);
+        this.$toast(
+          this.$t("resUpdate.gameVersion", [
+            updatedVersions
+              .map((e) => this.$t("resUpdate.gameVersionEntry", e))
+              .join(this.$t("resUpdate.gameVersionEntryJoiner")),
+          ])
+        );
       }
     },
     updateSearchSession() {
@@ -535,7 +536,7 @@ export default {
     },
     copySearchLink() {
       const reqUrl = location.origin + location.pathname + location.search;
-      this.$copyText(reqUrl + this.urlHash, "idCopyDialog.linkCopied");
+      this.$copyText(reqUrl + this.urlHash, "idCopyDialog.linkCopiedPrompt");
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();
