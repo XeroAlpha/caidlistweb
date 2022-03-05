@@ -51,7 +51,7 @@ function withTransaction(db, storeNames, mode, action) {
 
 const globalSearchMaxCount = 100;
 const chunkSize = 32;
-const stepTimeLimit = 15;
+const stepTimeLimit = 10;
 
 const gloablSearchEnum = {
     id: "#global",
@@ -140,8 +140,7 @@ const SearchEngine = {
             }),
             {
                 currentSearch: null,
-                pendingSearch: null,
-                splitJobs: false
+                pendingSearch: null
             }
         );
         return reactiveSession;
@@ -238,9 +237,6 @@ const SearchEngine = {
             while (chunk.length) {
                 session.results.push(chunk.shift());
                 session.showNotFound = false;
-                if (session.splitJobs) {
-                    await Vue.nextTick(); // trigger UI update
-                }
             }
             stepEndTime = Date.now();
             if (stepEndTime - stepStartTime > stepTimeLimit) {
@@ -254,6 +250,7 @@ const SearchEngine = {
             }
         }
         await Vue.nextTick();
+        await nextAnimationFrame();
     },
     doSearchEnumChunk(enumId, chunk, textLowerCase) {
         const textLength = textLowerCase.length;
