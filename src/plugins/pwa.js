@@ -34,7 +34,7 @@ class PWAManager {
                 this.updateReady = true;
             },
             updatefound: (reg) => {
-                this.updateFound = reg.installing != null;
+                this.updateFound = reg.active != null && reg.installing != null;
             },
             error: (err) => console.error(err)
         });

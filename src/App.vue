@@ -64,7 +64,7 @@
             @click="openBranchMenuAndOpenGroup('version')"
           >
             <v-list-item-title>
-              {{ $t("mainMenu.version", [engine.dataVersion]) }}
+              {{ $t("mainMenu.version", [engine.coreVersion]) }}
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item

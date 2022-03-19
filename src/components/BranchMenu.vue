@@ -13,7 +13,7 @@
                 $t("branchMenu.currentVersion", [
                   $t("branchMenu.versionTemplate", [
                     versionIndex.name,
-                    versionIndex.dataVersion,
+                    versionIndex.coreVersion,
                   ]),
                 ])
               }}
@@ -27,7 +27,7 @@
         >
           <v-list-item-content>
             <v-list-item-title>
-              {{ $t("branchMenu.versionTemplate", [e.name, e.dataVersion]) }}
+              {{ $t("branchMenu.versionTemplate", [e.name, e.coreVersion]) }}
             </v-list-item-title>
             <v-list-item-subtitle>
               {{ e.description }}

@@ -77,6 +77,7 @@ const SearchEngine = {
         branchId: null,
         branchName: null,
         dataVersion: null,
+        coreVersion: null,
         offlineUrl: null,
         enumList: [gloablSearchEnum],
         ready: false
@@ -102,6 +103,7 @@ const SearchEngine = {
         state.branchId = branchInfo.id;
         state.branchName = branchInfo.name;
         state.dataVersion = versionIndex.dataVersion;
+        state.coreVersion = versionIndex.coreVersion;
         state.offlineUrl = branchInfo.offlineUrl;
         state.enumList = [gloablSearchEnum, ...this.current.enumList];
         state.ready = true;
