@@ -1,8 +1,13 @@
 <template>
   <v-app>
-    <v-app-bar app outlined flat>
+    <v-app-bar
+      app
+      outlined
+      flat
+    >
       <v-text-field
         id="search-box"
+        v-model="searchText"
         outlined
         flat
         dense
@@ -10,15 +15,14 @@
         single-line
         hide-details="auto"
         prepend-icon="mdi-magnify"
-        v-model="searchText"
         :label="$t('searchBox.label')"
         :placeholder="searchBoxPlaceholder"
         class="search-box"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
-      ></v-text-field>
+      />
       <v-menu right>
-        <template v-slot:activator="{ on, attrs }">
+        <template #activator="{ on, attrs }">
           <v-btn
             outlined
             dense
@@ -34,10 +38,15 @@
             >
               {{ $t(activeEnumInfo.name) }}
             </span>
-            <v-icon class="ml-2">mdi-chevron-down</v-icon>
+            <v-icon class="ml-2">
+              mdi-chevron-down
+            </v-icon>
           </v-btn>
         </template>
-        <v-list class="main-menu overflow-y-auto" max-height="90vh">
+        <v-list
+          class="main-menu overflow-y-auto"
+          max-height="90vh"
+        >
           <v-list-item-group
             mandatory
             color="primary"
@@ -46,9 +55,9 @@
             @change="updateState({ enumId: $event })"
           >
             <tooltip-menu-list-item
-              left
               v-for="(enumInfo, i) in engine.enumList"
               :key="i"
+              left
               :tooltip="$t(enumInfo.description)"
               :value="enumInfo.id"
               @click="focusSearchBox()"
@@ -56,7 +65,7 @@
               <v-list-item-title>{{ $t(enumInfo.name) }}</v-list-item-title>
             </tooltip-menu-list-item>
           </v-list-item-group>
-          <v-divider></v-divider>
+          <v-divider />
           <tooltip-menu-list-item
             left
             :tooltip="$t('mainMenu.versionTooltip')"
@@ -87,7 +96,7 @@
               {{ $t("mainMenu.copySearchLink") }}
             </v-list-item-title>
           </tooltip-menu-list-item>
-          <v-divider></v-divider>
+          <v-divider />
           <tooltip-menu-list-item
             left
             :tooltip="$t('mainMenu.optimizedListTooltip')"
@@ -131,10 +140,10 @@
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
+            v-if="editorMode"
             left
             :tooltip="$t('mainMenu.exportModifierTooltip')"
             class="export-modifier"
-            v-if="editorMode"
             @click="exportModifiers()"
           >
             <v-list-item-title>
@@ -142,10 +151,10 @@
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
+            v-if="$pwa.installReady"
             left
             :tooltip="$t('mainMenu.installPWATooltip')"
             class="install-pwa"
-            v-if="$pwa.installReady"
             @click="$pwa.promptInstall()"
           >
             <v-list-item-title>
@@ -163,7 +172,7 @@
               {{ $t("mainMenu.offlinePack") }}
             </v-list-item-title>
           </tooltip-menu-list-item>
-          <v-divider></v-divider>
+          <v-divider />
           <tooltip-menu-list-item
             left
             :tooltip="$t('mainMenu.dataSourceTooltip')"
@@ -212,10 +221,13 @@
         :aria-label="$t('loadProgressBar')"
         absolute
         bottom
-      ></v-progress-linear>
+      />
     </v-app-bar>
     <v-main>
-      <v-list v-show="!searchText && session.globalSearch" class="welcome-list">
+      <v-list
+        v-show="!searchText && session.globalSearch"
+        class="welcome-list"
+      >
         <v-list-item>
           <v-list-item-content>
             <button-alert
@@ -246,23 +258,27 @@
         <button-alert
           :button="!!session.correction"
           :button-text="$t('searchCorrection.action')"
-          @click="searchText = session.correction"
           class="search-correction ma-3"
+          @click="searchText = session.correction"
         >
           {{ searchResultEmptyPrompt }}
         </button-alert>
       </div>
       <optimizable-list
+        v-show="!session.showNotFound"
+        v-resize="onWindowSizeChanged"
         :items="session.results"
         :height="windowHeight - 65"
         :optimized="useOptimizedList"
         item-height="62px"
         class="search-result"
-        v-show="!session.showNotFound"
-        v-resize="onWindowSizeChanged"
       >
-        <template v-slot:default="{ item }">
-          <v-list-item ripple :key="item.key" @click="showIDDetail(item)">
+        <template #default="{ item }">
+          <v-list-item
+            :key="item.key"
+            ripple
+            @click="showIDDetail(item)"
+          >
             <v-list-item-content>
               <v-list-item-title>
                 <highlight-text-label :value="item.keyHighlight || item.key" />
@@ -283,7 +299,7 @@
       :entry="idDetailDialog.entry"
       :state="{ versionType, branchId, enumId, searchText }"
       @update="updateState($event)"
-    ></id-copy-dialog>
+    />
   </v-app>
 </template>
 
@@ -412,6 +428,56 @@ export default {
       },
       immediate: true,
     },
+  },
+
+  beforeCreate: function () {
+    this.SearchEngine = SearchEngine;
+    this.engine = SearchEngine.state;
+    this.searchIndexes = SearchEngine.indexes;
+    this.session = SearchEngine.newSearchSession();
+  },
+  mounted: function () {
+    this.$useLocalStorage(
+      "caidlist",
+      [
+        "lastDataVersion",
+        "useOptimizedList",
+        "darkMode",
+        "editorMode",
+        "versionType",
+        "branchId",
+        "enumId",
+        "searchText",
+      ],
+      "20220114",
+      (current, _, storage) => {
+        if (!current && storage.lastDataVersion) {
+          storage.versionType = "beta";
+          storage.branchId = SearchEngine.getBranchIdByIndex(
+            "beta",
+            storage.branchIndex
+          );
+          storage.enumId = SearchEngine.globalSearchEnumId;
+          storage.lastDataVersion = { beta: storage.lastDataVersion };
+          delete storage.branchIndex;
+          delete storage.selectedEnumIndex;
+          return "20220114";
+        }
+      }
+    );
+    HistoryState.bindReactiveObject(this, [
+      "versionType",
+      "branchId",
+      "enumId",
+      "searchText",
+    ]);
+    this.applyStateFromHash();
+    HistoryState.registerListener();
+    this.loadCurrentBranch("initial");
+    this.notifyGameVersionUpdate();
+    window.addEventListener("hashchange", () => {
+      this.applyStateFromHash();
+    });
   },
 
   methods: {
@@ -544,56 +610,6 @@ export default {
     howToUse() {
       window.open(this.$t("welcomeList.guideLink"), "_blank");
     },
-  },
-
-  beforeCreate: function () {
-    this.SearchEngine = SearchEngine;
-    this.engine = SearchEngine.state;
-    this.searchIndexes = SearchEngine.indexes;
-    this.session = SearchEngine.newSearchSession();
-  },
-  mounted: function () {
-    this.$useLocalStorage(
-      "caidlist",
-      [
-        "lastDataVersion",
-        "useOptimizedList",
-        "darkMode",
-        "editorMode",
-        "versionType",
-        "branchId",
-        "enumId",
-        "searchText",
-      ],
-      "20220114",
-      (current, _, storage) => {
-        if (!current && storage.lastDataVersion) {
-          storage.versionType = "beta";
-          storage.branchId = SearchEngine.getBranchIdByIndex(
-            "beta",
-            storage.branchIndex
-          );
-          storage.enumId = SearchEngine.globalSearchEnumId;
-          storage.lastDataVersion = { beta: storage.lastDataVersion };
-          delete storage.branchIndex;
-          delete storage.selectedEnumIndex;
-          return "20220114";
-        }
-      }
-    );
-    HistoryState.bindReactiveObject(this, [
-      "versionType",
-      "branchId",
-      "enumId",
-      "searchText",
-    ]);
-    this.applyStateFromHash();
-    HistoryState.registerListener();
-    this.loadCurrentBranch("initial");
-    this.notifyGameVersionUpdate();
-    window.addEventListener("hashchange", () => {
-      this.applyStateFromHash();
-    });
   },
 };
 </script>

@@ -1,8 +1,18 @@
 <template>
-  <v-alert outlined text type="info" class="mb-0">
+  <v-alert
+    outlined
+    text
+    type="info"
+    class="mb-0"
+  >
     <v-row align="center">
-      <v-col class="grow"><slot></slot></v-col>
-      <v-col class="shrink pa-0 pr-3" v-if="button">
+      <v-col class="grow">
+        <slot />
+      </v-col>
+      <v-col
+        v-if="button"
+        class="shrink pa-0 pr-3"
+      >
         <v-btn
           link
           text
@@ -22,8 +32,14 @@
 export default {
   props: {
     button: Boolean,
-    buttonText: String,
-    href: String,
+    buttonText: {
+      type: String,
+      default: "",
+    },
+    href: {
+      type: String,
+      default: "",
+    },
   },
 };
 </script>

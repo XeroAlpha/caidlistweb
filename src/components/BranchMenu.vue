@@ -1,12 +1,18 @@
 <template>
   <v-dialog
     :value="visible"
-    @input="$emit('visibility-changed', $event)"
     max-width="500px"
+    @input="$emit('visibility-changed', $event)"
   >
-    <v-list class="branch-menu overflow-y-auto" max-height="90vh">
-      <v-list-group class="version-group" v-model="versionGroup">
-        <template v-slot:activator>
+    <v-list
+      class="branch-menu overflow-y-auto"
+      max-height="90vh"
+    >
+      <v-list-group
+        v-model="versionGroup"
+        class="version-group"
+      >
+        <template #activator>
           <v-list-item-content>
             <v-list-item-title>
               {{
@@ -33,12 +39,17 @@
               {{ e.description }}
             </v-list-item-subtitle>
           </v-list-item-content>
-          <v-icon v-if="versionIndex == e">mdi-check</v-icon>
+          <v-icon v-if="versionIndex == e">
+            mdi-check
+          </v-icon>
         </v-list-item>
       </v-list-group>
-      <v-divider></v-divider>
-      <v-list-group class="branch-group" v-model="branchGroup">
-        <template v-slot:activator>
+      <v-divider />
+      <v-list-group
+        v-model="branchGroup"
+        class="branch-group"
+      >
+        <template #activator>
           <v-list-item-content>
             <v-list-item-title>
               {{ $t("branchMenu.currentBranch", [branchInfo.name]) }}
@@ -58,10 +69,12 @@
               {{ e.description }}
             </v-list-item-subtitle>
           </v-list-item-content>
-          <v-icon v-if="branchInfo == e">mdi-check</v-icon>
+          <v-icon v-if="branchInfo == e">
+            mdi-check
+          </v-icon>
         </v-list-item>
       </v-list-group>
-      <v-divider></v-divider>
+      <v-divider />
       <v-list-item
         class="close-branch-menu"
         link
@@ -88,11 +101,17 @@ export default {
 
   props: {
     visible: Boolean,
-    versionType: String,
-    branchId: String,
+    versionType: {
+      type: String,
+      default: "",
+    },
+    branchId: {
+      type: String,
+      default: "",
+    },
     group: {
       type: String,
-      required: false,
+      default: "",
     },
   },
 

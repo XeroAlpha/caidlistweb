@@ -1,9 +1,14 @@
-module.exports = {
-    transpileDependencies: ["vuetify"],
-    publicPath: "", // use relative path
+const { defineConfig } = require("@vue/cli-service");
+module.exports = defineConfig({
+    transpileDependencies: true,
+
+    // use relative path
+    publicPath: "",
+
     configureWebpack: {
         devtool: "source-map"
     },
+
     pwa: {
         name: "MCBEID表",
         manifestOptions: {
@@ -30,51 +35,11 @@ module.exports = {
         },
         workboxPluginMode: "GenerateSW",
         workboxOptions: {
-            exclude: [/\.(js|css)\.map$/i, /\.zip/i, /data\/(.*)index.json/i],
-            runtimeCaching: [
-                {
-                    urlPattern: new RegExp("^https://fonts.googleapis.com/"),
-                    handler: "staleWhileRevalidate",
-                    options: {
-                        cacheName: "google-fonts-stylesheets"
-                    }
-                },
-                {
-                    urlPattern: new RegExp("^https://fonts.gstatic.com/"),
-                    handler: "cacheFirst",
-                    options: {
-                        cacheName: "google-fonts-webfonts",
-                        cacheableResponse: {
-                            statuses: [0, 200]
-                        },
-                        expiration: {
-                            maxAgeSeconds: 60 * 60 * 24 * 365,
-                            maxEntries: 30
-                        }
-                    }
-                },
-                {
-                    urlPattern: "https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css",
-                    handler: "staleWhileRevalidate",
-                    options: {
-                        cacheName: "material-design-icons-stylesheets"
-                    }
-                },
-                {
-                    urlPattern: new RegExp("^https://cdn.jsdelivr.net/npm/@mdi/font@latest/fonts/"),
-                    handler: "cacheFirst",
-                    options: {
-                        cacheName: "material-design-icons-webfonts",
-                        cacheableResponse: {
-                            statuses: [0, 200]
-                        },
-                        expiration: {
-                            maxAgeSeconds: 60 * 60 * 24 * 365,
-                            maxEntries: 30
-                        }
-                    }
-                }
-            ]
+            exclude: [/\.(js|css)\.map$/i, /\.zip/i, /data\/(.*)index.json/i]
         }
+    },
+
+    css: {
+        sourceMap: true
     }
-};
+});

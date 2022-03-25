@@ -14,7 +14,7 @@
         class="id-dialog-table"
         :class="{ 'hide-actions': editMode }"
       >
-        <template v-slot:default>
+        <template #default>
           <tbody>
             <tr>
               <td>{{ $t("idCopyDialog.entryEnum") }}</td>
@@ -23,6 +23,7 @@
               </td>
               <td>
                 <tooltip-icon-button
+                  v-if="isGlobalSearch"
                   left
                   plain
                   small
@@ -30,10 +31,10 @@
                   class="jump-to-enum"
                   icon="mdi-crosshairs"
                   :label="$t('idCopyDialog.jumpTo')"
-                  v-if="isGlobalSearch"
                   @click="handleEvent('jumpTo')"
                 />
                 <tooltip-icon-button
+                  v-else
                   left
                   plain
                   small
@@ -41,7 +42,6 @@
                   class="jump-to-global"
                   icon="mdi-database-search-outline"
                   :label="$t('idCopyDialog.searchGlobal')"
-                  v-else
                   @click="handleEvent('searchGlobal')"
                 />
               </td>
@@ -50,14 +50,17 @@
               <td>{{ $t("idCopyDialog.entryId") }}</td>
               <td>
                 <v-text-field
+                  v-if="editMode"
                   v-model="memory.key"
                   dense
                   hide-details
                   disabled
                   class="text-body-2 mt-0 mb-1"
-                  v-if="editMode"
-                ></v-text-field>
-                <copyable-text-label :text="entry.key" v-else />
+                />
+                <copyable-text-label
+                  v-else
+                  :text="entry.key"
+                />
               </td>
               <td>
                 <tooltip-icon-button
@@ -76,13 +79,16 @@
               <td>{{ $t("idCopyDialog.entryValue") }}</td>
               <td>
                 <v-text-field
+                  v-if="editMode"
                   v-model="memory.value"
                   dense
                   hide-details
                   class="text-body-2 mt-0 mb-1"
-                  v-if="editMode"
-                ></v-text-field>
-                <copyable-text-label :text="entry.value" v-else />
+                />
+                <copyable-text-label
+                  v-else
+                  :text="entry.value"
+                />
               </td>
               <td>
                 <tooltip-icon-button
@@ -102,35 +108,40 @@
       </v-simple-table>
       <v-card-actions>
         <v-btn
+          v-if="editMode"
           text
           color="primary"
           class="save"
-          v-if="editMode"
           @click="handleEvent('save')"
         >
           {{ $t("idCopyDialog.save") }}
         </v-btn>
         <v-btn
+          v-else-if="editVisible"
           text
           color="primary"
           class="edit"
           :disabled="!editable"
-          v-else-if="editVisible"
           @click="handleEvent('edit')"
         >
           {{ $t("idCopyDialog.edit") }}
         </v-btn>
         <v-btn
+          v-else
           text
           color="primary"
           class="copy-link"
-          v-else
           @click="handleEvent('copyLink')"
         >
           {{ $t("idCopyDialog.copyLink") }}
         </v-btn>
-        <v-spacer></v-spacer>
-        <v-btn text color="primary" class="close" @click="handleEvent('close')">
+        <v-spacer />
+        <v-btn
+          text
+          color="primary"
+          class="close"
+          @click="handleEvent('close')"
+        >
           {{ $t("idCopyDialog.close") }}
         </v-btn>
       </v-card-actions>
@@ -157,8 +168,14 @@ export default {
   props: {
     visible: Boolean,
     editable: Boolean,
-    state: Object,
-    entry: Object,
+    state: {
+      type: String,
+      required: true,
+    },
+    entry: {
+      type: String,
+      required: true,
+    },
   },
 
   data: () => ({

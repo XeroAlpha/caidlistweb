@@ -25,7 +25,10 @@
 <script>
 export default {
   props: {
-    text: String,
+    text: {
+      type: String,
+      default: "",
+    },
   },
   data: () => ({
     touching: false,

@@ -4,7 +4,7 @@
     transition="v-fade-transition"
     :disabled="!left && !right && !top && !bottom"
   >
-    <template v-slot:activator="{ on, attrs }">
+    <template #activator="{ on, attrs }">
       <v-btn
         icon
         :aria-label="label"
@@ -20,15 +20,21 @@
 
 <script>
 export default {
+  inheritAttrs: false,
   props: {
     left: Boolean,
     right: Boolean,
     top: Boolean,
     bottom: Boolean,
-    label: String,
-    icon: String,
+    label: {
+      type: String,
+      default: "",
+    },
+    icon: {
+      type: String,
+      default: "",
+    },
   },
-  inheritAttrs: false,
 };
 </script>
 

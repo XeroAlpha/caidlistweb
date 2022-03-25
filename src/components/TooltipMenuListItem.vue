@@ -4,12 +4,12 @@
     transition="v-fade-transition"
     :disabled="!isHoverable || !tooltip"
   >
-    <template v-slot:activator="{ on, attrs }">
+    <template #activator="{ on, attrs }">
       <v-list-item
         v-bind="{ ...attrs, ...$attrs }"
         v-on="{ ...on, ...$listeners }"
       >
-        <slot></slot>
+        <slot />
       </v-list-item>
     </template>
     <span>{{ tooltip }}</span>
@@ -18,15 +18,15 @@
 
 <script>
 export default {
+  inheritAttrs: false,
   props: {
     left: Boolean,
     right: Boolean,
     tooltip: {
       type: String,
-      required: false,
+      default: "",
     },
   },
-  inheritAttrs: false,
   computed: {
     isHoverable() {
       return matchMedia("(hover: hover)").matches;

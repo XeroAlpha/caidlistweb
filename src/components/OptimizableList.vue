@@ -1,17 +1,24 @@
 <template>
   <v-virtual-scroll
+    v-if="optimized"
     :items="items"
     :height="height"
     :item-height="itemHeight"
     bench="1"
-    v-if="optimized"
   >
-    <template v-slot:default="{ item, index }">
-      <slot :item="item" :index="index"></slot>
+    <template #default="{ item, index }">
+      <slot
+        :item="item"
+        :index="index"
+      />
     </template>
   </v-virtual-scroll>
   <v-list v-else>
-    <slot v-for="(item, index) in items" :item="item" :index="index"></slot>
+    <slot
+      v-for="(item, index) in items"
+      :item="item"
+      :index="index"
+    />
   </v-list>
 </template>
 
@@ -26,7 +33,10 @@ export default {
       type: [Number, String],
       required: true,
     },
-    height: [Number, String],
+    height: {
+      type: [Number, String],
+      required: true,
+    },
     optimized: Boolean
   },
 };
