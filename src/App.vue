@@ -375,13 +375,14 @@ export default {
       }
     },
     title() {
+      const pwaSuffix = this.$pwa.displayInBrowser ? "" : "PWA";
       if (this.engine.ready) {
-        return this.$t("document.titleWithBranch", [
+        return this.$t("document.titleWithBranch" + pwaSuffix, [
           this.engine.versionName,
           this.engine.branchName,
         ]);
       } else {
-        return this.$t("document.title");
+        return this.$t("document.title" + pwaSuffix);
       }
     },
     urlHash() {

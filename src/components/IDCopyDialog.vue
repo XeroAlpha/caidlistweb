@@ -265,7 +265,7 @@ export default {
             searchText: this.entry.value,
           });
           this.$toast(
-            this.$t("idCopyDialog.replaceSearch", [this.entry.value])
+            this.$t("idCopyDialog.replaceSearchPrompt", [this.entry.value])
           );
           break;
         case "edit":

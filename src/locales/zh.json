@@ -1,7 +1,9 @@
 {
     "document": {
         "title": "MCBEID表",
-        "titleWithBranch": "{1} - {0} - MCBEID表"
+        "titlePWA": "MCBEID表",
+        "titleWithBranch": "{1} - {0} - MCBEID表",
+        "titleWithBranchPWA": "{1} - {0}"
     },
     "searchBox": {
         "label": "搜索",

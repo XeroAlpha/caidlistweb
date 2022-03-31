@@ -16,6 +16,7 @@ class PWAManager {
     installPrompt = null;
     updatedWorker = null;
     updateTimeout = 2000;
+    displayInBrowser = true;
 
     prepare() {
         if (!("serviceWorker" in navigator)) {
@@ -45,6 +46,11 @@ class PWAManager {
         });
         navigator.serviceWorker.addEventListener("controllerchange", () => {
             window.location.reload();
+        });
+        const queryList = window.matchMedia("(display-mode: browser)");
+        this.displayInBrowser = queryList.matches;
+        queryList.addEventListener("change", ev => {
+            this.displayInBrowser = ev.matches;
         });
     }
 
