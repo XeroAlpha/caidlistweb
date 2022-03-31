@@ -13,6 +13,7 @@
         dense
         clearable
         single-line
+        autocomplete="off"
         hide-details="auto"
         prepend-icon="mdi-magnify"
         :label="$t('searchBox.label')"
@@ -255,7 +256,17 @@
         </v-list-item>
       </v-list>
       <div v-show="session.showNotFound && searchText">
+        <v-alert
+          v-show="session.error"
+          outlined
+          text
+          type="error"
+          class="search-error mb-0 ma-3"
+        >
+          {{ $t("searchBox.error", [session.error]) }}
+        </v-alert>
         <button-alert
+          v-show="!session.error"
           :button="!!session.correction"
           :button-text="$t('searchCorrection.action')"
           class="search-correction ma-3"

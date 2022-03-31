@@ -9,7 +9,8 @@
         "label": "搜索",
         "placeholderGlobal": "搜索全部条目",
         "placeholder": "在 {0} 中搜索",
-        "placeholderEntryCount": "{count} 个条目"
+        "placeholderEntryCount": "{count} 个条目",
+        "error": "搜索框输入内容不正确：{0}"
     },
     "mainMenu": {
         "on": "开启",

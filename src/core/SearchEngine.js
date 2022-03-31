@@ -136,6 +136,7 @@ const SearchEngine = {
                 progress: 0,
                 globalSearch: true,
                 showNotFound: false,
+                error: null,
                 results: [],
                 correction: null,
                 enumSize: 0
@@ -194,39 +195,42 @@ const SearchEngine = {
     async doSearch(session) {
         const { enumId, text } = session.currentSearch;
         const { enums, enumList } = this.current;
-        const textLowerCase = text.toLowerCase();
+        const searchText = this.preprocessSearchText(text);
         session.progress = 0;
         session.results.splice(0); // remove all elements
-        if (enumId == gloablSearchEnum.id) {
-            session.globalSearch = true;
-            session.enumSize = -1;
-            if (text.length) {
-                const progressPerEnum = 100 / enumList.length;
-                let i;
-                for (i = 0; i < enumList.length; i++) {
-                    const selectedEnum = enums[enumList[i].id];
-                    const enumEntries = Object.entries(selectedEnum);
-                    await this.doSearchEnum(session, enumList[i].id, enumEntries, textLowerCase, (subprogress) => {
-                        session.progress = progressPerEnum * (i + subprogress);
-                    });
-                    if (session.pendingSearch || session.results.length > globalSearchMaxCount) {
-                        break;
+        session.error = searchText.error;
+        if (!searchText.error) {
+            if (enumId == gloablSearchEnum.id) {
+                session.globalSearch = true;
+                session.enumSize = -1;
+                if (text.length) {
+                    const progressPerEnum = 100 / enumList.length;
+                    let i;
+                    for (i = 0; i < enumList.length; i++) {
+                        const selectedEnum = enums[enumList[i].id];
+                        const enumEntries = Object.entries(selectedEnum);
+                        await this.doSearchEnum(session, enumList[i].id, enumEntries, searchText, (subprogress) => {
+                            session.progress = progressPerEnum * (i + subprogress);
+                        });
+                        if (session.pendingSearch || session.results.length > globalSearchMaxCount) {
+                            break;
+                        }
                     }
                 }
+            } else if (enumId in enums) {
+                session.globalSearch = false;
+                const selectedEnum = enums[enumId];
+                const enumEntries = Object.entries(selectedEnum);
+                session.enumSize = enumEntries.length;
+                await this.doSearchEnum(session, enumId, enumEntries, searchText, (progress) => {
+                    session.progress = progress * 100;
+                });
             }
-        } else if (enumId in enums) {
-            session.globalSearch = false;
-            const selectedEnum = enums[enumId];
-            const enumEntries = Object.entries(selectedEnum);
-            session.enumSize = enumEntries.length;
-            await this.doSearchEnum(session, enumId, enumEntries, textLowerCase, (progress) => {
-                session.progress = progress * 100;
-            });
         }
         session.progress = 0;
         session.showNotFound = session.results.length == 0;
     },
-    async doSearchEnum(session, enumId, enumEntries, textLowerCase, reportProgress) {
+    async doSearchEnum(session, enumId, enumEntries, searchText, reportProgress) {
         const enumLength = enumEntries.length;
         let i, chunk, stepChunkCount, stepStartTime, stepEndTime;
         stepStartTime = Date.now();
@@ -234,7 +238,7 @@ const SearchEngine = {
         for (i = 0; i < enumEntries.length; i += chunkSize) {
             stepChunkCount++;
             chunk = enumEntries.slice(i, i + chunkSize);
-            chunk = this.doSearchEnumChunk(enumId, chunk, textLowerCase);
+            chunk = this.doSearchEnumChunk(enumId, chunk, searchText);
             reportProgress(i / enumLength);
             while (chunk.length) {
                 session.results.push(chunk.shift());
@@ -254,30 +258,14 @@ const SearchEngine = {
         await Vue.nextTick();
         await nextAnimationFrame();
     },
-    doSearchEnumChunk(enumId, chunk, textLowerCase) {
-        const textLength = textLowerCase.length;
-        if (textLength) {
+    doSearchEnumChunk(enumId, chunk, searchText) {
+        if (!searchText.empty) {
             chunk = chunk
                 .map(([key, value]) => {
-                    let indexInKey = key.toLowerCase().indexOf(textLowerCase);
-                    let indexInValue = value.toLowerCase().indexOf(textLowerCase);
-                    if (indexInKey >= 0 || indexInValue >= 0) {
-                        let result = { enumId, key, value };
-                        if (indexInKey >= 0) {
-                            result.keyHighlight = [
-                                key.slice(0, indexInKey),
-                                key.slice(indexInKey, indexInKey + textLength),
-                                key.slice(indexInKey + textLength)
-                            ];
-                        }
-                        if (indexInValue >= 0) {
-                            result.valueHighlight = [
-                                value.slice(0, indexInValue),
-                                value.slice(indexInValue, indexInValue + textLength),
-                                value.slice(indexInValue + textLength)
-                            ];
-                        }
-                        return result;
+                    const keyHighlight = this.doSearchValueHighlighted(key, searchText);
+                    const valueHighlight = this.doSearchValueHighlighted(value, searchText);
+                    if (keyHighlight || valueHighlight) {
+                        return { enumId, key, value, keyHighlight, valueHighlight };
                     } else {
                         return null;
                     }
@@ -289,6 +277,60 @@ const SearchEngine = {
             });
         }
         return chunk;
+    },
+    preprocessSearchText(text) {
+        const textLength = text.length;
+        if (textLength == 0) return { empty: true };
+        if (textLength > 1 && text.startsWith("~")) {
+            try {
+                return { regex: new RegExp(text.substring(1), "i") };
+            } catch (err) {
+                if (err instanceof SyntaxError) {
+                    return { error: err.message };
+                }
+                throw err;
+            }
+        }
+        return {
+            textLowerCase: text.toLowerCase(),
+            textLength
+        };
+    },
+    doSearchValueHighlighted(value, searchText) {
+        const positions = this.doSearchValue(value, searchText);
+        if (positions) {
+            const result = [];
+            let start = 0;
+            for (const end of positions) {
+                result.push(value.slice(start, end));
+                start = end;
+            }
+            result.push(value.slice(start));
+            return result;
+        }
+        return null;
+    },
+    doSearchValue(value, searchText) {
+        if (searchText.regex) {
+            const match = searchText.regex.exec(value);
+            if (match) {
+                return [
+                    match.index,
+                    match.index + match[0].length
+                ];
+            }
+        } else {
+            const { textLowerCase, textLength } = searchText;
+            const valueLowerCase = value.toLowerCase();
+            const indexInValue = valueLowerCase.indexOf(textLowerCase);
+            if (indexInValue >= 0) {
+                return [
+                    indexInValue,
+                    indexInValue + textLength
+                ];
+            }
+        }
+        return null;
     },
     async updateEnumEntry(enumId, key, value) {
         const selectedEnum = this.current.enums[enumId];

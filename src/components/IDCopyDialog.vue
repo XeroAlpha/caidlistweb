@@ -169,11 +169,11 @@ export default {
     visible: Boolean,
     editable: Boolean,
     state: {
-      type: String,
+      type: Object,
       required: true,
     },
     entry: {
-      type: String,
+      type: Object,
       required: true,
     },
   },
