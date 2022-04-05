@@ -281,9 +281,18 @@ const SearchEngine = {
     preprocessSearchText(text) {
         const textLength = text.length;
         if (textLength == 0) return { empty: true };
-        if (textLength > 1 && text.startsWith("~")) {
+        if (text.startsWith("~")) {
             try {
-                return { regex: new RegExp(text.substring(1), "i") };
+                let regex;
+                if (text.startsWith("~*")) {
+                    regex = new RegExp(text.slice(2), "i");
+                } else {
+                    regex = new RegExp(text.slice(1));
+                }
+                return {
+                    type: "regexMatches",
+                    regex
+                };
             } catch (err) {
                 if (err instanceof SyntaxError) {
                     return { error: err.message };
@@ -291,9 +300,33 @@ const SearchEngine = {
                 throw err;
             }
         }
+        if (text.startsWith("=")) {
+            return {
+                type: "equals",
+                text: text.slice(1),
+                textLength: textLength - 1
+            };
+        }
+        if (text.startsWith("^")) {
+            return {
+                type: "startsWith",
+                text: text.slice(1),
+                textLength: textLength - 1
+            };
+        }
+        if (text.startsWith("!")) {
+            return {
+                type: "contains",
+                text: text.slice(1),
+                textLength: textLength - 1
+            };
+        }
         return {
-            textLowerCase: text.toLowerCase(),
-            textLength
+            type: "keywordSearch",
+            texts: text
+                .toLowerCase()
+                .split(/\s+/)
+                .filter((e) => e.length > 0)
         };
     },
     doSearchValueHighlighted(value, searchText) {
@@ -311,23 +344,41 @@ const SearchEngine = {
         return null;
     },
     doSearchValue(value, searchText) {
-        if (searchText.regex) {
+        if (searchText.type == "regexMatches") {
             const match = searchText.regex.exec(value);
             if (match) {
-                return [
-                    match.index,
-                    match.index + match[0].length
-                ];
+                return [match.index, match.index + match[0].length];
             }
-        } else {
-            const { textLowerCase, textLength } = searchText;
+        } else if (searchText.type == "keywordSearch") {
+            const { texts } = searchText;
             const valueLowerCase = value.toLowerCase();
-            const indexInValue = valueLowerCase.indexOf(textLowerCase);
+            const result = [];
+            let start = 0;
+            for (const textPart of texts) {
+                const indexInValue = valueLowerCase.indexOf(textPart, start);
+                if (indexInValue >= 0) {
+                    start = indexInValue + textPart.length;
+                    result.push(indexInValue, start);
+                } else {
+                    return null;
+                }
+            }
+            return result;
+        } else if (searchText.type == "equals") {
+            const { text, textLength } = searchText;
+            if (value == text) {
+                return [0, textLength];
+            }
+        } else if (searchText.type == "startsWith") {
+            const { text, textLength } = searchText;
+            if (value.startsWith(text)) {
+                return [0, textLength];
+            }
+        } else if (searchText.type == "contains") {
+            const { text, textLength } = searchText;
+            const indexInValue = value.indexOf(text);
             if (indexInValue >= 0) {
-                return [
-                    indexInValue,
-                    indexInValue + textLength
-                ];
+                return [indexInValue, indexInValue + textLength];
             }
         }
         return null;
