@@ -5,6 +5,7 @@
     :persistent="editMode"
     max-width="400px"
     @input="$emit('visibility-changed', $event)"
+    @keydown="onKeyDown"
   >
     <v-card class="id-copy-dialog">
       <v-card-title class="id-key">
@@ -16,7 +17,7 @@
       >
         <template #default>
           <tbody>
-            <tr>
+            <tr v-if="entry.enumId">
               <td>{{ $t("idCopyDialog.entryEnum") }}</td>
               <td>
                 <copyable-text-label :text="enumName" />
@@ -150,9 +151,9 @@
 </template>
 
 <script>
-import SearchEngine from "../core/SearchEngine.js";
-import TooltipIconButton from "../components/TooltipIconButton.vue";
-import CopyableTextLabel from "../components/CopyableTextLabel.vue";
+import SearchEngine from "@/core/SearchEngine.js";
+import TooltipIconButton from "@/components/TooltipIconButton.vue";
+import CopyableTextLabel from "@/components/CopyableTextLabel.vue";
 
 export default {
   components: {
@@ -223,7 +224,7 @@ export default {
     visible(newValue) {
       if (newValue) {
         this.editMode = false;
-        this.editVisible = this.editable;
+        this.editVisible = this.editable && this.entry.enumId != null;
       }
     },
   },
@@ -288,6 +289,15 @@ export default {
           break;
       }
     },
+    onKeyDown(event) {
+      if (event.key == "Enter") {
+        if (this.editMode) {
+          this.handleEvent("save");
+        } else {
+          this.handleEvent("close");
+        }
+      }
+    }
   },
 };
 </script>

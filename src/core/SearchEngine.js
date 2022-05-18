@@ -1,6 +1,9 @@
 import Vue from "vue";
-import Indexes from "../assets/dataIndex.json";
-import Corrections from "../assets/corrections.json";
+import i18n from "@/plugins/i18n";
+import Indexes from "@/assets/dataIndex.json";
+import Corrections from "@/assets/corrections.json";
+
+const indexesURL = new URL("./data/index.json", location.href);
 
 function delayedValue(ms, value) {
     return new Promise((resolve) => setTimeout(resolve, ms, value));
@@ -126,7 +129,8 @@ const SearchEngine = {
         this.state.ready = false;
         const versionIndex = this.getVersionIndex(versionType);
         const branchInfo = this.getBranchInfo(versionIndex, branchId);
-        const branchData = await (await fetch(branchInfo.dataUrl)).json();
+        const dataUrl = new URL(branchInfo.dataUrl, indexesURL);
+        const branchData = await (await fetch(dataUrl)).json();
         await this.updateState(versionIndex, branchInfo, branchData);
     },
     newSearchSession() {
@@ -143,7 +147,8 @@ const SearchEngine = {
             }),
             {
                 currentSearch: null,
-                pendingSearch: null
+                pendingSearch: null,
+                searchPolicy: "all"
             }
         );
         return reactiveSession;
@@ -199,7 +204,10 @@ const SearchEngine = {
         session.progress = 0;
         session.results.splice(0); // remove all elements
         session.error = searchText.error;
-        if (!searchText.error) {
+        if (searchText.type == "command") {
+            const results = await this.doExecuteCommand(session, searchText.command);
+            session.results.push(...results);
+        } else if (!searchText.error) {
             if (enumId == gloablSearchEnum.id) {
                 session.globalSearch = true;
                 session.enumSize = -1;
@@ -238,7 +246,7 @@ const SearchEngine = {
         for (i = 0; i < enumEntries.length; i += chunkSize) {
             stepChunkCount++;
             chunk = enumEntries.slice(i, i + chunkSize);
-            chunk = this.doSearchEnumChunk(enumId, chunk, searchText);
+            chunk = this.doSearchEnumChunk(session, enumId, chunk, searchText);
             reportProgress(i / enumLength);
             while (chunk.length) {
                 session.results.push(chunk.shift());
@@ -258,12 +266,12 @@ const SearchEngine = {
         await Vue.nextTick();
         await nextAnimationFrame();
     },
-    doSearchEnumChunk(enumId, chunk, searchText) {
+    doSearchEnumChunk(session, enumId, chunk, searchText) {
         if (!searchText.empty) {
             chunk = chunk
                 .map(([key, value]) => {
-                    const keyHighlight = this.doSearchValueHighlighted(key, searchText);
-                    const valueHighlight = this.doSearchValueHighlighted(value, searchText);
+                    const keyHighlight = this.doSearchValueHighlighted(session, key, searchText, "key");
+                    const valueHighlight = this.doSearchValueHighlighted(session, value, searchText, "value");
                     if (keyHighlight || valueHighlight) {
                         return { enumId, key, value, keyHighlight, valueHighlight };
                     } else {
@@ -295,7 +303,7 @@ const SearchEngine = {
                 };
             } catch (err) {
                 if (err instanceof SyntaxError) {
-                    return { error: err.message };
+                    return { error: i18n.t("searchEngine.invalidRegExp", [err.message]) };
                 }
                 throw err;
             }
@@ -321,6 +329,12 @@ const SearchEngine = {
                 textLength: textLength - 1
             };
         }
+        if (text.startsWith("/")) {
+            return {
+                type: "command",
+                command: text.slice(1)
+            };
+        }
         return {
             type: "keywordSearch",
             texts: text
@@ -329,8 +343,8 @@ const SearchEngine = {
                 .filter((e) => e.length > 0)
         };
     },
-    doSearchValueHighlighted(value, searchText) {
-        const positions = this.doSearchValue(value, searchText);
+    doSearchValueHighlighted(session, value, searchText, scope) {
+        const positions = this.doSearchValue(session, value, searchText, scope);
         if (positions) {
             const result = [];
             let start = 0;
@@ -343,7 +357,13 @@ const SearchEngine = {
         }
         return null;
     },
-    doSearchValue(value, searchText) {
+    doSearchValue(session, value, searchText, scope) {
+        if (session.searchPolicy == "keyOnly" && scope != "key") {
+            return null;
+        }
+        if (session.searchPolicy == "valueOnly" && scope != "value") {
+            return null;
+        }
         if (searchText.type == "regexMatches") {
             const match = searchText.regex.exec(value);
             if (match) {
@@ -382,6 +402,203 @@ const SearchEngine = {
             }
         }
         return null;
+    },
+    async doExecuteCommand(session, command) {
+        const commandParts = command.split(/\s+/);
+        const commandName = commandParts[0].toLowerCase();
+        const foundCommands = this.commands.filter((e) => {
+            if (e.aliases && e.aliases.some((alias) => alias.startsWith(commandName))) {
+                return true;
+            }
+            return e.name.startsWith(commandName);
+        });
+        if (foundCommands.length) {
+            const result = [];
+            for (const e of foundCommands) {
+                if (e.name == commandName) {
+                    result.push(...await e.list(session, commandParts.slice(1)));
+                } else if (commandParts.length == 1) {
+                    const keyHighlight = [""];
+                    if (e.aliasOf) {
+                        keyHighlight.push(commandName, e.name.slice(commandName.length) + " = " + e.aliasOf);
+                    } else {
+                        keyHighlight.push(commandName, e.name.slice(commandName.length));
+                    }
+                    result.push({
+                        key: "/" + e.name,
+                        value: i18n.t(e.desc),
+                        keyHighlight,
+                        action: "search",
+                        text: "/" + e.name + " "
+                    });
+                }
+            }
+            return result;
+        }
+        return [
+            {
+                key: i18n.t("searchEngine.commandNotFound", [command]),
+                action: "none"
+            }
+        ];
+    },
+    commands: [],
+    registerCommand(signature) {
+        this.commands.push(signature);
+        if (signature.aliases) {
+            signature.aliases.forEach((alias) => {
+                this.commands.push({
+                    ...signature,
+                    name: alias,
+                    aliasOf: signature.name
+                });
+            });
+        }
+    },
+    setupCommands() {
+        this.registerCommand({
+            name: "use",
+            desc: "searchEngine.useCommand.desc",
+            list(session, [arg1, arg2]) {
+                if (arg2 != null) {
+                    return this.getBranchEntries(arg1, arg2);
+                } else {
+                    return [...this.getVersionEntries(arg1), ...this.getBranchEntries(null, arg1)];
+                }
+            },
+            getVersionEntries(versionTypePrefix) {
+                return SearchEngine.indexes
+                    .filter((e) => (versionTypePrefix ? e.id.startsWith(versionTypePrefix) : true))
+                    .map((e) => ({
+                        key: e.id,
+                        value: i18n.t("searchEngine.useCommand.versionType", [e.name]),
+                        keyHighlight: SearchEngine.current.versionIndex == e ? ["", e.id] : null,
+                        action: "switchBranch",
+                        versionType: e.id
+                    }));
+            },
+            getBranchEntries(versionType, branchIdPrefix) {
+                const versionIndex = versionType
+                    ? SearchEngine.getVersionIndex(versionType)
+                    : SearchEngine.current.versionIndex;
+                return versionIndex.branchList
+                    .filter((e) => (branchIdPrefix ? e.id.startsWith(branchIdPrefix) : true))
+                    .map((e) => ({
+                        key: e.id,
+                        value: i18n.t("searchEngine.useCommand.branchId", [e.name]),
+                        keyHighlight: SearchEngine.current.branchInfo == e ? ["", e.id] : null,
+                        action: "switchBranch",
+                        versionType: versionIndex.id,
+                        branchId: e.id
+                    }));
+            }
+        });
+        this.registerCommand({
+            name: "switch",
+            desc: "searchEngine.switchCommand.desc",
+            list(session, [enumIdPrefix]) {
+                return [gloablSearchEnum, ...SearchEngine.current.enumList]
+                    .filter((e) => (enumIdPrefix ? e.id.startsWith(enumIdPrefix) : true))
+                    .map((e) => ({ key: e.id, value: i18n.t(e.name), action: "updateState", state: { enumId: e.id } }));
+            }
+        });
+        this.registerCommand({
+            name: "search",
+            desc: "searchEngine.searchCommand.desc",
+            list(session, [searchType, searchText]) {
+               return this.types
+                .filter(type => searchType ? type.id.startsWith(searchType) : true)
+                .map(type => ({
+                    key: type.id,
+                    value: i18n.t(type.desc),
+                    action: "search",
+                    text: type.prefix + (searchText || "")
+                }));
+            },
+            types: [
+                {
+                    id: "keywordSearch",
+                    desc: "searchEngine.searchCommand.keywordSearch",
+                    prefix: ""
+                },
+                {
+                    id: "regexMatches",
+                    desc: "searchEngine.searchCommand.regexMatches",
+                    prefix: "~"
+                },
+                {
+                    id: "regexMatchesIgnoreCase",
+                    desc: "searchEngine.searchCommand.regexMatchesIgnoreCase",
+                    prefix: "~*"
+                },
+                {
+                    id: "equals",
+                    desc: "searchEngine.searchCommand.equals",
+                    prefix: "="
+                },
+                {
+                    id: "startsWith",
+                    desc: "searchEngine.searchCommand.startsWith",
+                    prefix: "^"
+                },
+                {
+                    id: "contains",
+                    desc: "searchEngine.searchCommand.contains",
+                    prefix: "!"
+                }
+            ]
+        });
+        this.registerCommand({
+            name: "search-policy",
+            desc: "searchEngine.searchPolicyCommand.desc",
+            list(session, [searchPolicy]) {
+               return this.policies
+                .filter(policy => searchPolicy ? policy.id.startsWith(searchPolicy) : true)
+                .map(type => ({
+                    key: type.id,
+                    value: i18n.t(type.desc),
+                    keyHighlight: session.searchPolicy == type.id ? ["", type.id] : null,
+                    action: "custom",
+                    policyId: type.id,
+                    runAction() {
+                        session.searchPolicy = this.policyId;
+                        return { searchText: "" };
+                    }
+                }));
+            },
+            policies: [
+                {
+                    id: "all",
+                    desc: "searchEngine.searchPolicyCommand.all"
+                },
+                {
+                    id: "keyOnly",
+                    desc: "searchEngine.searchPolicyCommand.keyOnly"
+                },
+                {
+                    id: "valueOnly",
+                    desc: "searchEngine.searchPolicyCommand.valueOnly"
+                }
+            ]
+        });
+        this.registerCommand({
+            name: "list-modifier",
+            desc: "searchEngine.listModifierCommand.desc",
+            async list() {
+                const modifiers = await SearchEngine.getAllModifiers();
+                return modifiers.map(modifier => ({
+                    key: modifier.key,
+                    value: modifier.value,
+                    action: "updateState",
+                    state: {
+                        versionType: modifier.versionType,
+                        branchId: modifier.branchId,
+                        enumId: modifier.enumId,
+                        searchText: modifier.key
+                    }
+                }));
+            }
+        })
     },
     async updateEnumEntry(enumId, key, value) {
         const selectedEnum = this.current.enums[enumId];
@@ -440,6 +657,14 @@ const SearchEngine = {
             });
         });
     },
+    async getAllModifiers() {
+        const { db } = this.current;
+        let data;
+        await withTransaction(db, "modifiers", "readwrite", async (store) => {
+            data = await completeDBRequest(store.getAll());
+        });
+        return data;
+    },
     async exportModifiers() {
         const { db } = this.current;
         let name, data;
@@ -462,10 +687,12 @@ const SearchEngine = {
             if (data.name == store.name && data.version == db.version) {
                 data.data.forEach((e) => store.put(e));
             } else {
-                throw "database signature mismatch";
+                throw new Error("database signature mismatch");
             }
         });
     }
 };
+
+SearchEngine.setupCommands();
 
 export default SearchEngine;

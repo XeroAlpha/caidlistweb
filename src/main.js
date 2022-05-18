@@ -1,11 +1,11 @@
 import Vue from "vue";
-import App from "./App.vue";
-import GlobalSnackBar from "./plugins/snackbar";
-import PWA from "./plugins/pwa";
-import LocalStorage from "./plugins/localStorage";
-import Clipboard from "./plugins/clipboard";
-import vuetify from "./plugins/vuetify";
-import i18n from "./plugins/i18n";
+import App from "@/App.vue";
+import GlobalSnackBar from "@/plugins/snackbar";
+import PWA from "@/plugins/pwa";
+import LocalStorage from "@/plugins/localStorage";
+import Clipboard from "@/plugins/clipboard";
+import vuetify from "@/plugins/vuetify";
+import i18n from "@/plugins/i18n";
 
 import "@mdi/font/css/materialdesignicons.css";
 import "@fontsource/roboto/latin-400.css";

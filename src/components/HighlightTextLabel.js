@@ -1,7 +1,10 @@
 export default {
     functional: true,
     props: {
-        value: [String, Array]
+        value: {
+            type: [String, Array],
+            required: true
+        }
     },
     render: function (h, context) {
         const text = context.props.value;

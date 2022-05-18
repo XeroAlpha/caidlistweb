@@ -21,6 +21,7 @@
         class="search-box"
         @focus="searchBoxFocus = true"
         @blur="searchBoxFocus = false"
+        @keydown="onSearchBoxKeyDown($event)"
       />
       <v-menu right>
         <template #activator="{ on, attrs }">
@@ -263,7 +264,7 @@
           type="error"
           class="search-error mb-0 ma-3"
         >
-          {{ $t("searchBox.error", [session.error]) }}
+          {{ session.error }}
         </v-alert>
         <button-alert
           v-show="!session.error"
@@ -288,15 +289,19 @@
           <v-list-item
             :key="item.key"
             ripple
-            @click="showIDDetail(item)"
+            @click="onEntryClick(item)"
           >
             <v-list-item-content>
               <v-list-item-title>
-                <highlight-text-label :value="item.keyHighlight || item.key" />
+                <highlight-text-label
+                  :value="item.keyHighlight || item.key"
+                  :translate="item.keyTranslate"
+                />
               </v-list-item-title>
               <v-list-item-subtitle v-if="item.value">
                 <highlight-text-label
                   :value="item.valueHighlight || item.value"
+                  :translate="item.valueTranslate"
                 />
               </v-list-item-subtitle>
             </v-list-item-content>
@@ -315,14 +320,14 @@
 </template>
 
 <script>
-import SearchEngine from "./core/SearchEngine.js";
-import HistoryState from "./core/HistoryState.js";
-import OptimizableList from "./components/OptimizableList.vue";
-import ButtonAlert from "./components/ButtonInfoAlert.vue";
-import IdCopyDialog from "./components/IDCopyDialog.vue";
-import TooltipMenuListItem from "./components/TooltipMenuListItem.vue";
-import BranchMenu from "./components/BranchMenu.vue";
-import HighlightTextLabel from "./components/HighlightTextLabel.js";
+import SearchEngine from "@/core/SearchEngine.js";
+import HistoryState from "@/core/HistoryState.js";
+import OptimizableList from "@/components/OptimizableList.vue";
+import ButtonAlert from "@/components/ButtonInfoAlert.vue";
+import IdCopyDialog from "@/components/IDCopyDialog.vue";
+import TooltipMenuListItem from "@/components/TooltipMenuListItem.vue";
+import BranchMenu from "@/components/BranchMenu.vue";
+import HighlightTextLabel from "@/components/HighlightTextLabel.js";
 
 export default {
   name: "App",
@@ -490,6 +495,19 @@ export default {
     window.addEventListener("hashchange", () => {
       this.applyStateFromHash();
     });
+    window.addEventListener("keydown", (ev) => {
+      if (ev.ctrlKey) {
+        if (ev.key == "a" || ev.key == "v") {
+          this.focusSearchBox();
+          return;
+        }
+        if (ev.key == "f" || ev.key == "g") {
+          this.focusSearchBox();
+          ev.preventDefault();
+          return;
+        }
+      }
+    });
   },
 
   methods: {
@@ -550,9 +568,31 @@ export default {
       this.branchMenu.group = group;
       this.branchMenu.visible = true;
     },
-    showIDDetail(entry) {
-      this.idDetailDialog.entry = entry;
-      this.idDetailDialog.visible = true;
+    onEntryClick(entry) {
+      if (entry.action == "search") {
+        this.updateState({ searchText: entry.text });
+      } else if (entry.action == "switchBranch") {
+        this.updateState({
+          searchText: "",
+          versionType: entry.versionType,
+          branchId: entry.branchId,
+        }, "switchBranch");
+      } else if (entry.action == "updateState") {
+        this.updateState({
+          searchText: "",
+          ...entry.state,
+        });
+      } else if (entry.action == "custom") {
+        const newState = entry.runAction(this);
+        if (newState) {
+          this.updateState(newState);
+        }
+      } else if (entry.action == "none") {
+        return;
+      } else {
+        this.idDetailDialog.entry = entry;
+        this.idDetailDialog.visible = true;
+      }
     },
     async updateState(state, scene) {
       const oldState = {
@@ -618,6 +658,14 @@ export default {
     },
     focusSearchBox() {
       document.querySelector("#search-box").focus();
+    },
+    onSearchBoxKeyDown(event) {
+      if (event.key == "Enter") {
+        const firstResultEntry = this.session.results[0];
+        if (this.searchText != "" && firstResultEntry) {
+          this.onEntryClick(firstResultEntry);
+        }
+      }
     },
     howToUse() {
       window.open(this.$t("welcomeList.guideLink"), "_blank");

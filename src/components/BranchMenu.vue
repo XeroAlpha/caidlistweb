@@ -91,7 +91,7 @@
 </template>
 
 <script>
-import SearchEngine from "../core/SearchEngine.js";
+import SearchEngine from "@/core/SearchEngine.js";
 
 export default {
   model: {

@@ -41,7 +41,7 @@
         "feedbackLink": "https://jq.qq.com/?_wv=1027&k=RcLgagPy",
         "feedbackTooltip": "加群【命令助手ID表补全计划】：756038353",
         "about": "关于 MCBEID表",
-        "aboutLink": "https://gitee.com/projectxero/idlistweb",
+        "aboutLink": "https://github.com/XeroAlpha/caidlistweb",
         "aboutTooltip": "想了解网页的具体细节请点这"
     },
     "loadProgressBar": "加载进度",
@@ -64,6 +64,36 @@
     "globalSearch": {
         "name": "全局",
         "description": "搜索全部条目"
+    },
+    "searchEngine": {
+        "invalidRegExp": "无效的正则表达式：{0}",
+        "commandNotFound": "找不到命令：{0}",
+        "useCommand": {
+            "desc": "使用/切换到指定的版本或分支。",
+            "versionType": "[版本] {0}",
+            "branchId": "[分支] {0}"
+        },
+        "switchCommand": {
+            "desc": "切换到指定的枚举。"
+        },
+        "searchCommand": {
+            "desc": "以特定方式进行搜索。",
+            "keywordSearch": "关键词搜索。将输入内容按空格切分为有序的关键词序列进行搜索。",
+            "regexMatches": "正则表达式匹配。将输入内容作为正则表达式进行匹配。",
+            "regexMatchesIgnoreCase": "正则表达式匹配（忽略大小写）。将输入内容作为忽略大小写的正则表达式进行匹配。",
+            "equals": "相同。只展示与输入内容完全相同的条目。",
+            "startsWith": "以……开头。只展示以输入内容开头的条目。",
+            "contains": "包含。只展示包含输入内容的条目。"
+        },
+        "searchPolicyCommand": {
+            "desc": "配置搜索策略。",
+            "all": "同时在条目的名称和描述中进行搜索。",
+            "keyOnly": "只在条目名称中进行搜索。",
+            "valueOnly": "只在条目描述中进行搜索。"
+        },
+        "listModifierCommand": {
+            "desc": "显示所有的本地修改条目。"
+        }
     },
     "idCopyDialog": {
         "title": "条目详情",
@@ -107,5 +137,8 @@
     },
     "toast": {
         "close": "关闭"
-    }
+    },
+    "tips": [
+        "欢迎使用MCBEID表！"
+    ]
 }
