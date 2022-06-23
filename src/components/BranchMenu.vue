@@ -172,5 +172,6 @@ export default {
 <style>
 .branch-menu .v-list-item__subtitle {
   white-space: normal;
+  text-overflow: clip;
 }
 </style>

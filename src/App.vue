@@ -237,7 +237,7 @@
               :button-text="$t('welcomeList.guide')"
               @click="howToUse()"
             >
-              {{ $t("welcomeList.text") }}
+              {{ $t("tips." + tipIndex) }}
             </button-alert>
           </v-list-item-content>
         </v-list-item>
@@ -267,13 +267,22 @@
           {{ session.error }}
         </v-alert>
         <button-alert
-          v-show="!session.error"
-          :button="!!session.correction"
-          :button-text="$t('searchCorrection.action')"
+          v-show="!session.error && session.correction"
+          button
+          :button-text="$t('searchCorrection.correct')"
           class="search-correction ma-3"
           @click="searchText = session.correction"
         >
-          {{ searchResultEmptyPrompt }}
+          {{ $t("searchCorrection.text", [searchText, session.correction]) }}
+        </button-alert>
+        <button-alert
+          v-show="!session.error && !session.correction"
+          :button="!session.globalSearch"
+          :button-text="$t('searchCorrection.globalSearch')"
+          class="search-correction ma-3"
+          @click="updateState({ enumId: SearchEngine.globalSearchEnumId })"
+        >
+          {{ $t("searchCorrection.noCorrection", [searchText]) }}
         </button-alert>
       </div>
       <optimizable-list
@@ -365,6 +374,7 @@ export default {
     useOptimizedList: true,
     searchBoxFocus: false,
     searchText: "",
+    tipIndex: -1,
   }),
 
   computed: {
@@ -378,16 +388,6 @@ export default {
         return this.$t("searchBox.placeholder", [
           this.$tc("searchBox.placeholderEntryCount", this.session.enumSize),
         ]);
-      }
-    },
-    searchResultEmptyPrompt() {
-      if (this.session.correction) {
-        return this.$t("searchCorrection.text", [
-          this.searchText,
-          this.session.correction,
-        ]);
-      } else {
-        return this.$t("searchCorrection.noCorrection", [this.searchText]);
       }
     },
     title() {
@@ -465,6 +465,7 @@ export default {
         "branchId",
         "enumId",
         "searchText",
+        "tipIndex",
       ],
       "20220114",
       (current, _, storage) => {
@@ -508,6 +509,7 @@ export default {
         }
       }
     });
+    this.tipIndex = (this.tipIndex + 1) % this.$t("tips").length;
   },
 
   methods: {
@@ -572,11 +574,14 @@ export default {
       if (entry.action == "search") {
         this.updateState({ searchText: entry.text });
       } else if (entry.action == "switchBranch") {
-        this.updateState({
-          searchText: "",
-          versionType: entry.versionType,
-          branchId: entry.branchId,
-        }, "switchBranch");
+        this.updateState(
+          {
+            searchText: "",
+            versionType: entry.versionType,
+            branchId: entry.branchId,
+          },
+          "switchBranch"
+        );
       } else if (entry.action == "updateState") {
         this.updateState({
           searchText: "",
@@ -660,9 +665,12 @@ export default {
       document.querySelector("#search-box").focus();
     },
     onSearchBoxKeyDown(event) {
-      if (event.key == "Enter") {
+      if (event.key == "Enter" || event.key == "Tab") {
         const firstResultEntry = this.session.results[0];
         if (this.searchText != "" && firstResultEntry) {
+          if (event.key == "Tab" && firstResultEntry.action != "search") {
+            return;
+          }
           this.onEntryClick(firstResultEntry);
         }
       }

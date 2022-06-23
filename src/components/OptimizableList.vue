@@ -4,7 +4,7 @@
     :items="items"
     :height="height"
     :item-height="itemHeight"
-    bench="1"
+    bench="100"
   >
     <template #default="{ item, index }">
       <slot

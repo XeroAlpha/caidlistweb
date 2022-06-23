@@ -41,14 +41,12 @@ export default {
     touchDown() {
       this.touching = true;
       this.touchTimeout = setTimeout(() => this.copy(), 1000);
-      console.log("touchDown");
     },
     touchUp() {
       if (this.touching) {
         this.touching = false;
         clearTimeout(this.touchTimeout);
       }
-      console.log("touchUp");
     },
   },
 };

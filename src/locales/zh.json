@@ -35,7 +35,7 @@
         "offlinePack": "下载压缩包",
         "offlinePackTooltip": "下载一个包含所有条目文本文件的压缩包",
         "dataSource": "数据来源",
-        "dataSourceLink": "https://gitee.com/projectxero/caidlist",
+        "dataSourceLink": "https://github.com/XeroAlpha/caidlist",
         "dataSourceTooltip": "ID 表的原始数据来源",
         "feedback": "问题反馈",
         "feedbackLink": "https://jq.qq.com/?_wv=1027&k=RcLgagPy",
@@ -59,7 +59,8 @@
     "searchCorrection": {
         "text": "未找到与“{0}”相关的条目，您要找的是不是“{1}”？",
         "noCorrection": "未找到与“{0}”相关的条目",
-        "action": "更正"
+        "correct": "更正",
+        "globalSearch": "全局搜索"
     },
     "globalSearch": {
         "name": "全局",
@@ -139,6 +140,22 @@
         "close": "关闭"
     },
     "tips": [
-        "欢迎使用MCBEID表！"
+        "欢迎使用MCBEID表！",
+        "在搜索框中输入内容搜索ID与描述！",
+        "全局搜索模式下可以搜索全部内容！",
+        "在右上角的主菜单里可以缩小搜索范围！",
+        "条目详情里的文本可以点击复制按钮或长按进行复制！",
+        "条目详情右侧的按钮在特殊情况下有奇效！",
+        "找不到的条目可以在主菜单里切换版本和分支试试！",
+        "无论是主菜单里还是条目详情里都可以复制直达条目的链接！",
+        "晚上可以试试主菜单里的深色模式！",
+        "觉得条目描述有问题可以从主菜单进入编辑模式自己改！",
+        "MCBEID表即使断网了也能使用！",
+        "MCBEID表只有自动更新的时候才需要联网！",
+        "不知道正确译名所以找不到？可以点击更正按钮！",
+        "可以在搜索框输入斜杠开头的MCBEID表专属命令！",
+        "MCBEID表会把你的输入按空格拆开分别搜索！",
+        "MCBEID表支持正则表达式！",
+        "欢迎加群一起完善！主菜单点击问题反馈"
     ]
 }

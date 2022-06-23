@@ -107,7 +107,7 @@ const SearchEngine = {
         state.branchName = branchInfo.name;
         state.dataVersion = versionIndex.dataVersion;
         state.coreVersion = versionIndex.coreVersion;
-        state.offlineUrl = branchInfo.offlineUrl;
+        state.offlineUrl = new URL(branchInfo.offlineUrl, indexesURL);
         state.enumList = [gloablSearchEnum, ...this.current.enumList];
         state.ready = true;
     },
@@ -672,13 +672,11 @@ const SearchEngine = {
             name = store.name;
             data = await completeDBRequest(store.getAll());
         });
-        return Buffer.from(
-            JSON.stringify({
-                version: db.version,
-                name,
-                data
-            })
-        );
+        return new TextEncoder().encode(JSON.stringify({
+            version: db.version,
+            name,
+            data
+        }));
     },
     async loadModifiers(buffer) {
         const { db } = this.current;
