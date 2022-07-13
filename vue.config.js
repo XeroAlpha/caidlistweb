@@ -86,7 +86,7 @@ module.exports = defineConfig({
             shortcuts: [
                 {
                     name: "查询ID",
-                    url: "./#beta-vanilla/#global/",
+                    url: "./#beta-vanilla/global/",
                     icons: [
                         {
                             src: "./img/icon-96x96.png",
@@ -104,7 +104,7 @@ module.exports = defineConfig({
                 },
                 {
                     name: "查询译名",
-                    url: "./#beta-translator/#global/",
+                    url: "./#beta-translator/global/",
                     icons: [
                         {
                             src: "./img/icon-96x96.png",

@@ -8,7 +8,7 @@
     @keydown="onKeyDown"
   >
     <v-card class="id-copy-dialog">
-      <v-card-title class="id-key">
+      <v-card-title>
         {{ $t("idCopyDialog.title") }}
       </v-card-title>
       <v-simple-table

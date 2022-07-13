@@ -27,6 +27,8 @@
         "darkModeTooltip": "启用后将全局主题更改为暗色主题",
         "editorMode": "编辑模式：{0}",
         "editorModeTooltip": "启用后用户可以自定义每个条目的翻译",
+        "columnWidth": "分栏配置",
+        "columnWidthTooltip": "更改条目列表是否分栏与分栏宽度",
         "exportModifier": "导出编辑数据",
         "exportModifierFilename": "编辑数据",
         "exportModifierTooltip": "导出编辑模式下进行的编辑更改",
@@ -117,6 +119,13 @@
     },
     "copyableTextLabel": {
         "copy": "复制"
+    },
+    "listColumnDialog": {
+        "title": "分栏宽度",
+        "description": "分栏数量由界面宽度与设定的分栏宽度决定。",
+        "preview": "当前配置的最小栏宽占界面宽度的 {0}%，可将界面分为 {1} 栏。",
+        "labels": ["不分栏", "窄", "中等", "宽"],
+        "close": "关闭"
     },
     "resUpdate": {
         "updateFound": "检测到存在更新，正在预载……",

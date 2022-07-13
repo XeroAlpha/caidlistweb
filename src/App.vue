@@ -142,6 +142,16 @@
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
+            left
+            :tooltip="$t('mainMenu.columnWidthTooltip')"
+            class="column-config"
+            @click="columnConfigDialog.visible = true"
+          >
+            <v-list-item-title>
+              {{ $t("mainMenu.columnWidth") }}
+            </v-list-item-title>
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
             v-if="editorMode"
             left
             :tooltip="$t('mainMenu.exportModifierTooltip')"
@@ -292,6 +302,7 @@
         :height="windowHeight - 65"
         :optimized="useOptimizedList"
         item-height="62px"
+        :cols="columnCount"
         class="search-result"
       >
         <template #default="{ item }">
@@ -325,6 +336,12 @@
       :state="{ versionType, branchId, enumId, searchText }"
       @update="updateState($event)"
     />
+    <column-config-dialog
+      v-model="columnConfigDialog.visible"
+      :col-width="columnWidth"
+      :window-width="windowWidth"
+      @update="columnWidth = $event"
+    />
   </v-app>
 </template>
 
@@ -337,6 +354,7 @@ import IdCopyDialog from "@/components/IDCopyDialog.vue";
 import TooltipMenuListItem from "@/components/TooltipMenuListItem.vue";
 import BranchMenu from "@/components/BranchMenu.vue";
 import HighlightTextLabel from "@/components/HighlightTextLabel.js";
+import ColumnConfigDialog from "@/components/ColumnConfigDialog.vue";
 
 export default {
   name: "App",
@@ -348,6 +366,7 @@ export default {
     TooltipMenuListItem,
     BranchMenu,
     HighlightTextLabel,
+    ColumnConfigDialog,
   },
 
   data: () => ({
@@ -364,7 +383,12 @@ export default {
         value: "",
       },
     },
+    columnConfigDialog: {
+      visible: false,
+    },
     windowHeight: 0,
+    windowWidth: 0,
+    columnWidth: 0,
     darkMode: false,
     editorMode: false,
     lastDataVersion: {},
@@ -388,6 +412,13 @@ export default {
         return this.$t("searchBox.placeholder", [
           this.$tc("searchBox.placeholderEntryCount", this.session.enumSize),
         ]);
+      }
+    },
+    columnCount() {
+      if (this.columnWidth > 0) {
+        return Math.floor(this.windowWidth / this.columnWidth);
+      } else {
+        return 1;
       }
     },
     title() {
@@ -458,6 +489,7 @@ export default {
       "caidlist",
       [
         "lastDataVersion",
+        "columnWidth",
         "useOptimizedList",
         "darkMode",
         "editorMode",
@@ -515,6 +547,7 @@ export default {
   methods: {
     onWindowSizeChanged() {
       this.windowHeight = window.innerHeight;
+      this.windowWidth = window.innerWidth;
     },
     async loadCurrentBranch(scene) {
       try {

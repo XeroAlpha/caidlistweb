@@ -57,7 +57,7 @@ const chunkSize = 32;
 const stepTimeLimit = 10;
 
 const gloablSearchEnum = {
-    id: "#global",
+    id: "global",
     name: "globalSearch.name",
     description: "globalSearch.description",
     translate: true
@@ -107,7 +107,7 @@ const SearchEngine = {
         state.branchName = branchInfo.name;
         state.dataVersion = versionIndex.dataVersion;
         state.coreVersion = versionIndex.coreVersion;
-        state.offlineUrl = new URL(branchInfo.offlineUrl, indexesURL);
+        state.offlineUrl = new URL(branchInfo.offlineUrl, indexesURL).toString();
         state.enumList = [gloablSearchEnum, ...this.current.enumList];
         state.ready = true;
     },
