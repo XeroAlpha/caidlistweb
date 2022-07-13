@@ -32,6 +32,8 @@
         "exportModifier": "导出编辑数据",
         "exportModifierFilename": "编辑数据",
         "exportModifierTooltip": "导出编辑模式下进行的编辑更改",
+        "importModifier": "导入编辑数据",
+        "importModifierTooltip": "导入之前导出的编辑数据文件",
         "installPWA": "安装离线版",
         "installPWATooltip": "以应用形式安装便于快速打开与离线使用",
         "offlinePack": "下载压缩包",
@@ -126,6 +128,10 @@
         "preview": "当前配置的最小栏宽占界面宽度的 {0}%，可将界面分为 {1} 栏。",
         "labels": ["不分栏", "窄", "中等", "宽"],
         "close": "关闭"
+    },
+    "importModifiers": {
+        "success": "{0} 条编辑数据已成功导入，将在下次启动时应用",
+        "failed": "无法导入其他格式的编辑数据\n{0}"
     },
     "resUpdate": {
         "updateFound": "检测到存在更新，正在预载……",

@@ -678,16 +678,21 @@ const SearchEngine = {
             data
         }));
     },
-    async loadModifiers(buffer) {
+    async importModifiers(buffer) {
         const { db } = this.current;
-        let data = JSON.parse(buffer.toString());
+        let data = JSON.parse(new TextDecoder().decode(buffer));
+        let count = 0;
         await withTransaction(db, "modifiers", "readwrite", async (store) => {
             if (data.name == store.name && data.version == db.version) {
-                data.data.forEach((e) => store.put(e));
+                data.data.forEach((e) => {
+                    count++;
+                    store.put(e);
+                });
             } else {
                 throw new Error("database signature mismatch");
             }
         });
+        return count;
     }
 };
 

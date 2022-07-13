@@ -163,6 +163,17 @@
             </v-list-item-title>
           </tooltip-menu-list-item>
           <tooltip-menu-list-item
+            v-if="editorMode"
+            left
+            :tooltip="$t('mainMenu.importModifierTooltip')"
+            class="import-modifier"
+            @click="importModifiers()"
+          >
+            <v-list-item-title>
+              {{ $t("mainMenu.importModifier") }}
+            </v-list-item-title>
+          </tooltip-menu-list-item>
+          <tooltip-menu-list-item
             v-if="$pwa.installReady"
             left
             :tooltip="$t('mainMenu.installPWATooltip')"
@@ -676,6 +687,22 @@ export default {
       a.download = this.$t("mainMenu.exportModifierFilename") + ".json";
       a.click();
       URL.revokeObjectURL(a.href);
+    },
+    importModifiers() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.click();
+      input.addEventListener("change", async () => {
+        try {
+          const file = input.files[0];
+          const buffer = new Uint8Array(await file.arrayBuffer());
+          const count = await SearchEngine.importModifiers(buffer);
+          this.$toast(this.$t("importModifiers.success", [count]));
+        } catch (err) {
+          this.$toast(this.$t("importModifiers.failed", [err.message]));
+        }
+      });
     },
     applyStateFromHash() {
       const result = /#(\w+)-(\w+)\/(\S+)\/(.*)/.exec(location.hash);
