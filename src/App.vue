@@ -262,20 +262,25 @@
             </button-alert>
           </v-list-item-content>
         </v-list-item>
-        <v-list-item
-          v-for="(enumInfo, i) in engine.enumList"
-          :key="i"
-          @click="updateState({ enumId: enumInfo.id }), focusSearchBox()"
+        <optimizable-list
+          :items="engine.enumList"
+          :cols="columnCount"
         >
-          <v-list-item-content>
-            <v-list-item-title>
-              {{ $t(enumInfo.name) }}
-            </v-list-item-title>
-            <v-list-item-subtitle>
-              {{ $t(enumInfo.description) }}
-            </v-list-item-subtitle>
-          </v-list-item-content>
-        </v-list-item>
+          <template #default="{ item }">
+            <v-list-item
+              @click="updateState({ enumId: item.id }), focusSearchBox()"
+            >
+              <v-list-item-content>
+                <v-list-item-title>
+                  {{ $t(item.name) }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ $t(item.description) }}
+                </v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
+          </template>
+        </optimizable-list>
       </v-list>
       <div v-show="session.showNotFound && searchText">
         <v-alert

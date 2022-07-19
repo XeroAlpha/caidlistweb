@@ -45,11 +45,11 @@ export default {
     },
     itemHeight: {
       type: [Number, String],
-      required: true,
+      default: "0px",
     },
     height: {
       type: [Number, String],
-      required: true,
+      default: "0px",
     },
     cols: {
       type: Number,
