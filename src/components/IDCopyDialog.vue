@@ -5,7 +5,7 @@
     :fullscreen="isRichValue"
     max-width="400px"
     @input="$emit('visibility-changed', $event)"
-    @keydown="onKeyDown"
+    @keydown.stop="onKeyDown"
   >
     <v-card class="id-copy-dialog">
       <v-card-title>

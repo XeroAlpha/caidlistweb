@@ -3,6 +3,7 @@
     :value="visible"
     max-width="500px"
     @input="$emit('visibility-changed', $event)"
+    @keydown.stop
   >
     <v-list
       class="branch-menu overflow-y-auto"

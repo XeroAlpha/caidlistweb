@@ -4,6 +4,7 @@
     :value="visible"
     max-width="500px"
     @input="$emit('visibility-changed', $event)"
+    @keydown.stop
   >
     <v-card class="list-column-dialog">
       <v-card-title>

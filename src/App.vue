@@ -544,7 +544,7 @@ export default {
     window.addEventListener("hashchange", () => {
       this.applyStateFromHash();
     });
-    window.addEventListener("keydown", (ev) => {
+    document.addEventListener("keydown", (ev) => {
       if (ev.ctrlKey) {
         if (ev.key == "a" || ev.key == "v") {
           this.focusSearchBox();
