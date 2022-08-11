@@ -6,7 +6,12 @@
     @touchcancel="touchUp()"
   >
     <span class="copyable-flex">
-      <span class="copyable-text">{{ text }}</span>
+      <span
+        class="copyable-text"
+        :class="{ 'copyable-text-pre': pre }"
+      >
+        {{ text }}
+      </span>
       <v-btn
         icon
         tile
@@ -25,6 +30,7 @@
 <script>
 export default {
   props: {
+    pre: Boolean,
     text: {
       type: String,
       default: "",
@@ -62,6 +68,9 @@ export default {
 .copyable-label .copyable-text {
   word-break: break-all;
   user-select: all;
+}
+.copyable-label .copyable-text-pre {
+  white-space: pre-wrap;
 }
 .copyable-label .copyable-copy {
   margin-left: 4px;

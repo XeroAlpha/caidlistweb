@@ -1,8 +1,8 @@
 <template>
   <v-dialog
-    scrollable
     :value="visible"
     :persistent="editMode"
+    :fullscreen="isRichValue"
     max-width="400px"
     @input="$emit('visibility-changed', $event)"
     @keydown="onKeyDown"
@@ -11,6 +11,7 @@
       <v-card-title>
         {{ $t("idCopyDialog.title") }}
       </v-card-title>
+      <v-divider />
       <v-simple-table
         class="id-dialog-table"
         :class="{ 'hide-actions': editMode }"
@@ -20,7 +21,10 @@
             <tr v-if="entry.enumId">
               <td>{{ $t("idCopyDialog.entryEnum") }}</td>
               <td>
-                <copyable-text-label :text="enumName" />
+                <copyable-text-label
+                  pre
+                  :text="enumName"
+                />
               </td>
               <td>
                 <tooltip-icon-button
@@ -60,6 +64,7 @@
                 />
                 <copyable-text-label
                   v-else
+                  pre
                   :text="entry.key"
                 />
               </td>
@@ -76,18 +81,21 @@
                 />
               </td>
             </tr>
-            <tr v-if="entry.value || editMode">
+            <tr v-if="(entry.value || editMode) && !isRichValue">
               <td>{{ $t("idCopyDialog.entryValue") }}</td>
               <td>
-                <v-text-field
+                <v-textarea
                   v-if="editMode"
                   v-model="memory.value"
+                  rows="1"
+                  auto-grow
                   dense
                   hide-details
                   class="text-body-2 mt-0 mb-1"
                 />
                 <copyable-text-label
                   v-else
+                  pre
                   :text="entry.value"
                 />
               </td>
@@ -107,6 +115,26 @@
           </tbody>
         </template>
       </v-simple-table>
+      <div
+        v-if="isRichValue"
+        class="pa-4 markdown"
+      >
+        <v-divider />
+        <v-textarea
+          v-if="editMode"
+          v-model="memory.value"
+          rows="1"
+          auto-grow
+          dense
+          hide-details
+          class="text-body-2 "
+        />
+        <markdown-view
+          v-else
+          :value="entry.value"
+        />
+      </div>
+      <v-divider />
       <v-card-actions>
         <v-btn
           v-if="editMode"
@@ -154,11 +182,13 @@
 import SearchEngine from "@/core/SearchEngine.js";
 import TooltipIconButton from "@/components/TooltipIconButton.vue";
 import CopyableTextLabel from "@/components/CopyableTextLabel.vue";
+import MarkdownView from "@/components/MarkdownView.vue";
 
 export default {
   components: {
     TooltipIconButton,
     CopyableTextLabel,
+    MarkdownView,
   },
 
   model: {
@@ -210,6 +240,9 @@ export default {
     },
     isSearchingValue() {
       return this.state.searchText == this.entry.value;
+    },
+    isRichValue() {
+      return typeof this.entry.value == "string" && this.entry.value.indexOf("\n") >= 0;
     },
     urlHash() {
       return [
@@ -318,5 +351,9 @@ div.id-dialog-table.hide-actions tr > td:nth-of-type(3) {
 div.id-dialog-table tr > td {
   padding-top: 8px !important;
   padding-bottom: 8px !important;
+}
+div.markdown {
+  white-space: normal;
+  overflow-y: auto;
 }
 </style>
