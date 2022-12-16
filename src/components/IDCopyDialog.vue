@@ -115,24 +115,24 @@
           </tbody>
         </template>
       </v-simple-table>
-      <div
-        v-if="isRichValue"
-        class="pa-4 markdown"
-      >
+      <div v-if="isRichValue">
         <v-divider />
-        <v-textarea
-          v-if="editMode"
-          v-model="memory.value"
-          rows="1"
-          auto-grow
-          dense
-          hide-details
-          class="text-body-2 "
-        />
-        <markdown-view
-          v-else
-          :value="entry.value"
-        />
+        <div class="pa-4">
+          <v-textarea
+            v-if="editMode"
+            v-model="memory.value"
+            rows="1"
+            auto-grow
+            dense
+            hide-details
+            class="text-body-2 "
+          />
+          <markdown-view
+            v-else
+            :value="entry.value"
+            class="markdown"
+          />
+        </div>
       </div>
       <v-divider />
       <v-card-actions>

@@ -60,7 +60,7 @@
         <v-list-item
           v-for="(e, i) in branchList"
           :key="i"
-          @click="pendingBranchId = e.id"
+          @click="(pendingBranchId = e.id), $emit('visibility-changed', false)"
         >
           <v-list-item-content>
             <v-list-item-title>
@@ -75,18 +75,6 @@
           </v-icon>
         </v-list-item>
       </v-list-group>
-      <v-divider />
-      <v-list-item
-        class="close-branch-menu"
-        link
-        @click="$emit('visibility-changed', false)"
-      >
-        <v-list-item-content>
-          <v-list-item-title>
-            {{ $t("branchMenu.close") }}
-          </v-list-item-title>
-        </v-list-item-content>
-      </v-list-item>
     </v-list>
   </v-dialog>
 </template>

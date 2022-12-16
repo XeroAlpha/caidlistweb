@@ -9,9 +9,8 @@
       <span
         class="copyable-text"
         :class="{ 'copyable-text-pre': pre }"
-      >
-        {{ text }}
-      </span>
+        v-text="text"
+      />
       <v-btn
         icon
         tile
