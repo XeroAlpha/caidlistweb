@@ -1,6 +1,6 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
-  <div>
+  <div class="markdown-view">
     <div
       class="markdown-body"
       v-html="markdownHTML"
@@ -49,15 +49,15 @@ export default {
 </script>
 
 <style lang="scss">
-.v-application.theme--light .markdown-body {
+.v-application.theme--light .markdown-view {
   @import "github-markdown-css/github-markdown-light";
   @import "highlight.js/scss/github.scss";
 }
-.v-application.theme--dark .markdown-body {
+.v-application.theme--dark .markdown-view {
   @import "github-markdown-css/github-markdown-dark";
   @import "highlight.js/scss/github-dark.scss";
 }
-.markdown-body {
+.markdown-view {
   background-color: unset !important;
   code {
     background-color: unset !important;
