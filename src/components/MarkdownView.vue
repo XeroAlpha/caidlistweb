@@ -57,10 +57,7 @@ export default {
   @import "github-markdown-css/github-markdown-dark";
   @import "highlight.js/scss/github-dark.scss";
 }
-.markdown-view {
+.markdown-body {
   background-color: unset !important;
-  code {
-    background-color: unset !important;
-  }
 }
 </style>
