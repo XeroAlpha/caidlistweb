@@ -132,7 +132,8 @@ module.exports = defineConfig({
         },
         workboxPluginMode: "GenerateSW",
         workboxOptions: {
-            exclude: [/\.(js|css)\.map$/i, /\.zip/i, /data\/(.*)index.json/i]
+            exclude: [/\.(js|css)\.map$/i, /\.zip/i, /data\/(.*)index.json/i],
+            maximumFileSizeToCacheInBytes: 41943040
         }
     },
 
